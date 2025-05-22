@@ -25,7 +25,7 @@ export default function Home() {
           const userProfile = await liff.getProfile()
           setProfile(userProfile)
           // Redirect to profile page when logged in
-          router.push('/profile')
+          router.push('/home')
         }
       } catch (error) {
         console.error('Failed to initialize LIFF', error)

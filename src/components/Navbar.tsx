@@ -158,7 +158,7 @@ export default function Navbar() {
                         <div className={`absolute bottom-6 left-4 right-4 text-center transition-all duration-700 ${isMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
                              style={{ transitionDelay: '600ms' }}>
                             <div className="border-t border-gray-700 pt-4">
-                                <p className="text-gray-400 text-sm hover:text-orange-400 transition-colors duration-300">© 2024 EREWHON SHOP</p>
+                                <p className="text-gray-400 text-sm hover:text-orange-400 transition-colors duration-300">© 2025 EREWHON SHOP</p>
                                 <p className="text-gray-500 text-xs mt-1 hover:text-gray-400 transition-colors duration-300">ขับเคลื่อนด้วยความรัก ❤️</p>
                             </div>
                         </div>
