@@ -10,12 +10,13 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const liffId = process.env.NEXT_PUBLIC_LIFF_ID
 
   useEffect(() => {
     const initLiff = async () => {
       try {
         const liff = (await import('@line/liff')).default
-        await liff.init({ liffId: '2007308242-kJ8ZvqGl' })
+        await liff.init({ liffId: `${liffId}` })
   
         if (!liff.isLoggedIn()) {
           // ถ้ายังไม่ได้ login ให้กลับไปหน้าแรก
