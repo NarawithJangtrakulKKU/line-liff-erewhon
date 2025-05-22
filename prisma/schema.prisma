@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ตาราง Users - เก็บข้อมูลผู้ใช้จาก LINE
+model User {
+  id          String   @id @default(cuid())
+  lineUserId  String   @unique // LINE User ID
+  displayName String?  // ชื่อจาก LINE Profile
+  pictureUrl  String?  // รูปโปรไฟล์จาก LINE
+  email       String?  // อีเมลหากมี
+  phone       String?  // เบอร์โทรศัพท์
+  role        UserRole @default(CUSTOMER) // บทบาทของผู้ใช้
+  isActive    Boolean  @default(true) // สถานะการใช้งาน
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  addresses   Address[]
+  orders      Order[]
+  cartItems   CartItem[]
+  reviews     Review[]
+
+  @@map("users")
+}
+
+// ตารางที่อยู่ของผู้ใช้
+model Address {
+  id          String  @id @default(cuid())
+  userId      String
+  name        String  // ชื่อผู้รับ
+  phone       String  // เบอร์โทรผู้รับ
+  address     String  // ที่อยู่เต็ม
+  district    String  // ตำบล/แขวง
+  subDistrict String  // อำเภอ/เขต
+  province    String  // จังหวัด
+  postalCode  String  // รหัสไปรษณีย์
+  isDefault   Boolean @default(false) // ที่อยู่หลัก
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@map("addresses")
+}
+
+// ตารางหมวดหมู่สินค้า
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  products    Product[]
+
+  @@map("categories")
+}
+
+// ตารางสินค้า
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  comparePrice Decimal? @db.Decimal(10, 2) // ราคาเปรียบเทียب (ราคาขีดฆ่า)
+  sku         String?  @unique // รหัสสินค้า
+  stock       Int      @default(0)
+  weight      Decimal? @db.Decimal(8, 2) // น้ำหนัก (กรัม)
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false) // สินค้าแนะนำ
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Foreign Keys
+  categoryId  String
+
+  // Relations
+  category    Category @relation(fields: [categoryId], references: [id])
+  images      ProductImage[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  reviews     Review[]
+
+  @@map("products")
+}
+
+// ตารางรูปภาพสินค้า
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  imageUrl  String
+  altText   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+// ตารางตระกร้าสินค้า
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+// ตารางคำสั่งซื้อ
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique // เลขที่คำสั่งซื้อ
+  userId          String
+  addressId       String
+  status          OrderStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod?
+  subtotal        Decimal     @db.Decimal(10, 2) // ยอดรวมสินค้า
+  shippingFee     Decimal     @db.Decimal(10, 2) @default(0) // ค่าจัดส่ง
+  tax             Decimal     @db.Decimal(10, 2) @default(0) // ภาษี
+  discount        Decimal     @db.Decimal(10, 2) @default(0) // ส่วนลด
+  total           Decimal     @db.Decimal(10, 2) // ยอดรวมสุทธิ
+  notes           String?     // หมายเหตุ
+  trackingNumber  String?     // เลขติดตามพัสดุ
+  shippedAt       DateTime?   // วันที่จัดส่ง
+  deliveredAt     DateTime?   // วันที่ได้รับสินค้า
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id])
+  address         Address     @relation(fields: [addressId], references: [id])
+  orderItems      OrderItem[]
+  orderStatusLogs OrderStatusLog[]
+
+  @@map("orders")
+}
+
+// ตารางรายการสินค้าในคำสั่งซื้อ
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2) // ราคา ณ ขณะที่สั่งซื้อ
+  total     Decimal @db.Decimal(10, 2) // ยอดรวมของรายการนี้
+
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ตารางบันทึกการเปลี่ยนแปลงสถานะคำสั่งซื้อ
+model OrderStatusLog {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  notes     String?
+  createdAt DateTime    @default(now())
+
+  // Relations
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_status_logs")
+}
+
+// ตารางรีวิวสินค้า
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  rating    Int      // คะแนน 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId]) // ผู้ใช้รีวิวสินค้าได้ครั้งเดียว
+  @@map("reviews")
+}
+
+// Enums
+enum UserRole {
+  CUSTOMER      // ลูกค้าทั่วไป
+  ADMIN         // ผู้ดูแลระบบ
+}
+
+enum OrderStatus {
+  PENDING       // รอการยืนยัน
+  CONFIRMED     // ยืนยันแล้ว
+  PROCESSING    // กำลังเตรียมสินค้า
+  SHIPPED       // จัดส่งแล้ว
+  DELIVERED     // ได้รับสินค้าแล้ว
+  CANCELLED     // ยกเลิก
+  REFUNDED      // คืนเงินแล้ว
+}
+
+enum PaymentStatus {
+  PENDING       // รอการชำระ
+  PAID          // ชำระแล้ว
+  FAILED        // ชำระไม่สำเร็จ
+  REFUNDED      // คืนเงินแล้ว
+}
+
+enum PaymentMethod {
+  CREDIT_CARD   // บัตรเครดิต
+  PROMPTPAY     // พร้อมเพย์
+  BANK_TRANSFER // โอนเงิน
+  COD           // เก็บเงินปลายทาง
+  LINE_PAY      // LINE Pay
+}

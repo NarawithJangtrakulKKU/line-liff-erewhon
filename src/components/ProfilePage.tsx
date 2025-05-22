@@ -1,62 +1,31 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Liff } from '@line/liff'
-
-type Profile = NonNullable<Awaited<ReturnType<Liff['getProfile']>>>
+import { useLiff } from '@/app/contexts/LiffContext'
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { profile, dbUser, isInitialized, isLoggedIn, logout } = useLiff()
   const router = useRouter()
-  const liffId = process.env.NEXT_PUBLIC_LIFF_ID
 
   useEffect(() => {
-    const initLiff = async () => {
-      try {
-        const liff = (await import('@line/liff')).default
-        await liff.init({ liffId: `${liffId}` })
-  
-        if (!liff.isLoggedIn()) {
-          // ถ้ายังไม่ได้ login ให้กลับไปหน้าแรก
-          router.push('/')
-        } else {
-          const userProfile = await liff.getProfile()
-          setProfile(userProfile)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        console.error('Failed to initialize LIFF', error)
-        router.push('/')
-      }
-    }
-  
-    initLiff()
-  }, [router])
-
-  const handleLogout = async () => {
-    try {
-      const liff = (await import('@line/liff')).default
-      liff.logout()
+    if (isInitialized && !isLoggedIn) {
       router.push('/')
-    } catch (error) {
-      console.error('Logout failed', error)
     }
-  }
+  }, [isInitialized, isLoggedIn, router])
 
-  if (isLoading) {
+  if (!isInitialized) {
     return (
       <div className="min-h-screen bg-orange-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-400 mx-auto"></div>
-          <p className="mt-4 text-orange-700">กำลังโหลดข้อมูลโปรไฟล์...</p>
+          <p className="mt-4 text-orange-700">กำลังโหลดข้อมูล...</p>
         </div>
       </div>
     )
   }
 
-  if (!profile) {
+  if (!profile || !dbUser) {
     return (
       <div className="min-h-screen bg-orange-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
@@ -70,6 +39,11 @@ export default function ProfilePage() {
         </div>
       </div>
     )
+  }
+
+  const handleLogout = async () => {
+    logout()
+    router.push('/')
   }
 
   return (
@@ -101,12 +75,19 @@ export default function ProfilePage() {
           <div className="bg-gradient-to-r from-orange-400 to-orange-500 p-8">
             <div className="flex flex-col items-center justify-center text-center">
               <img
-                src={profile.pictureUrl}
+                src={profile.pictureUrl || '/api/placeholder/128/128'}
                 alt="Profile"
                 className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
               />
               <h2 className="mt-4 text-3xl font-bold text-white">{profile.displayName}</h2>
               <p className="mt-2 text-orange-100">ยินดีต้อนรับสู่ EREWHON SHOP</p>
+              
+              {/* แสดงสถานะการบันทึกข้อมูล */}
+              <div className="mt-3 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                <p className="text-white text-sm">
+                  📅 สมาชิกตั้งแต่: {new Date(dbUser.createdAt).toLocaleDateString('th-TH')}
+                </p>
+              </div>
             </div>
           </div>
           
@@ -122,12 +103,24 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   <div className="bg-orange-50 p-4 rounded-lg">
                     <p className="text-orange-600 text-sm font-medium">LINE ID</p>
-                    <p className="font-mono text-gray-800 break-all">{profile.userId}</p>
+                    <p className="font-mono text-gray-800 break-all text-xs">{profile.userId}</p>
                   </div>
                   
                   <div className="bg-orange-50 p-4 rounded-lg">
                     <p className="text-orange-600 text-sm font-medium">ชื่อที่แสดง</p>
                     <p className="text-gray-800">{profile.displayName}</p>
+                  </div>
+
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <p className="text-orange-600 text-sm font-medium">Database ID</p>
+                    <p className="font-mono text-gray-800 break-all text-xs">{dbUser.id}</p>
+                  </div>
+
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <p className="text-orange-600 text-sm font-medium">อัปเดตล่าสุด</p>
+                    <p className="text-gray-800 text-sm">
+                      {new Date(dbUser.updatedAt).toLocaleString('th-TH')}
+                    </p>
                   </div>
                   
                   {profile.statusMessage && (
@@ -176,11 +169,13 @@ export default function ProfilePage() {
                       <p className="text-sm text-orange-600">จัดการข้อมูลส่วนตัว</p>
                     </div>
                   </button>
+
+                  
                 </div>
               </div>
             </div>
             
-            {/* Stats or Additional Info */}
+            {/* Stats */}
             <div className="border-t border-orange-200 pt-6 mt-8">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="bg-orange-50 p-4 rounded-lg">
