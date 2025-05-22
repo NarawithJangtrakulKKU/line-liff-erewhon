@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛍️ LINE LIFF E-commerce App (Next.js)
 
-## Getting Started
+โปรเจกต์นี้เป็นระบบจัดการสินค้าผ่าน LINE LIFF (LINE Front-end Framework) ที่ใช้ [Next.js](https://nextjs.org/) พัฒนาด้วย TypeScript โดยรองรับการแสดงผลและจัดการสินค้าผ่าน LINE Application พร้อมระบบจัดการฐานข้อมูลด้วย Prisma และ UI ที่ทันสมัยด้วย Tailwind CSS
 
-First, run the development server:
+## 🚀 Features
+
+- แสดงผลสินค้าผ่าน LINE LIFF
+- จัดการสินค้า (Products): เพิ่ม, แก้ไข, ลบ, ดูรายละเอียด
+- จัดการหมวดหมู่ (Categories): เพิ่ม, แก้ไข, ลบ
+- ระบบตะกร้าสินค้า (Cart)
+- UI/UX ทันสมัย Responsive ด้วย Tailwind CSS
+- รองรับการเชื่อมต่อกับ LINE Platform
+- ระบบ Authentication ด้วย LINE Login
+- รองรับการแสดงผลบน LINE Application
+
+## 🛠️ Tech Stack
+
+- [Next.js 15](https://nextjs.org/) (Frontend)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Prisma ORM](https://www.prisma.io/) (Database)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [LINE LIFF](https://developers.line.biz/en/docs/liff/overview/)
+- [React](https://reactjs.org/)
+
+---
+
+## 📦 การติดตั้งและรันโปรเจกต์
+
+### 1. Clone โปรเจกต์นี้ลงเครื่อง
+
+```bash
+git clone https://github.com/NarawithJangtrakulKKU/line-liff-erewhon.git
+cd line-liff-erewhon
+```
+
+### 2. ติดตั้ง dependencies
+
+```bash
+npm install
+```
+
+### 3. ตั้งค่า Environment Variables
+สร้างไฟล์ `.env` ในโฟลเดอร์หลักของโปรเจกต์ โดยมีค่าตัวอย่างดังนี้:
+
+```env
+# Database
+DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/mydb?schema=public"
+
+# LINE LIFF
+NEXT_PUBLIC_LIFF_ID="your-liff-id"
+```
+
+### 4. รัน Prisma Migration
+
+```bash
+npx prisma migrate dev
+```
+
+### 5. รัน Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 6. เปิด Browser หรือ LINE Application
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📝 โครงสร้างข้อมูล (Database Schema)
 
-To learn more about Next.js, take a look at the following resources:
+- **Product**: id, name, description, price, image, categoryId, createdAt, updatedAt
+- **Category**: id, name, createdAt, updatedAt
+- **Cart**: id, userId, productId, quantity, createdAt, updatedAt
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📋 ตัวอย่าง API Endpoint
 
-## Deploy on Vercel
+- `GET /api/products` — ดึงรายการสินค้า
+- `POST /api/products` — เพิ่มสินค้า
+- `PUT /api/products/:id` — แก้ไขสินค้า
+- `DELETE /api/products/:id` — ลบสินค้า
+- `GET /api/categories` — ดึงหมวดหมู่
+- `GET /api/cart` — ดึงข้อมูลตะกร้าสินค้า
+- `POST /api/cart` — เพิ่มสินค้าลงตะกร้า
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🖼️ การอัพโหลดและแสดงผลรูปภาพ
+- อัพโหลดไฟล์ภาพผ่านฟอร์ม
+- เก็บไฟล์ไว้ใน `/public` directory
+- แสดงผลรูปภาพผ่าน Next.js Image Component
+
+---
+
+## 👨‍💻 ผู้พัฒนา
+
+โปรเจกต์นี้พัฒนาโดย นราวิชญ์ จังตระกูล
+
+หากมีข้อเสนอแนะ หรือต้องการพูดคุยเกี่ยวกับโปรเจกต์นี้ สามารถติดต่อมาได้เลยครับ 🙌
