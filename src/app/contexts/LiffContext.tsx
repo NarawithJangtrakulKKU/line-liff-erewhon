@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import axios from 'axios';
 import type { Liff } from '@line/liff';
 
 type Profile = NonNullable<Awaited<ReturnType<Liff['getProfile']>>>;
@@ -50,76 +51,79 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
 
+  // ตั้งค่า axios instance สำหรับ API calls
+  const apiClient = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
+    withCredentials: true, // สำคัญ! เพื่อให้ cookies ถูกส่งไปด้วย
+    timeout: 10000, // 10 seconds timeout
+  });
+
+  // Axios response interceptor สำหรับจัดการ error
+  apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        // Token หมดอายุหรือไม่ valid
+        setIsAuthenticated(false);
+        setToken(null);
+        setDbUser(null);
+      }
+      return Promise.reject(error);
+    }
+  );
+
   // ฟังก์ชันเก็บข้อมูล user ลง database และสร้าง JWT
   const saveUserToDatabase = async (profile: Profile) => {
     try {
-      const response = await fetch('/api/user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // สำคัญ! เพื่อให้ cookies ถูกส่งไปด้วย
-        body: JSON.stringify({
-          lineUserId: profile.userId,
-          displayName: profile.displayName,
-          pictureUrl: profile.pictureUrl,
-        }),
+      const response = await apiClient.post('/user', {
+        lineUserId: profile.userId,
+        displayName: profile.displayName,
+        pictureUrl: profile.pictureUrl,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setDbUser(data.user);
-        setToken(data.token);
-        setIsAuthenticated(true);
-        console.log('User saved to database with JWT:', data.user);
-        return data;
-      } else {
-        console.error('Failed to save user to database');
-        setIsAuthenticated(false);
-      }
+      const data = response.data;
+      setDbUser(data.user);
+      setToken(data.token);
+      setIsAuthenticated(true);
+      console.log('User saved to database with JWT:', data.user);
+      return data;
     } catch (error) {
       console.error('Error saving user to database:', error);
       setIsAuthenticated(false);
+      throw error;
     }
   };
 
   // ฟังก์ชันดึงข้อมูล user จาก database
   const fetchUserFromDatabase = async (lineUserId: string) => {
     try {
-      const response = await fetch(`/api/user?lineUserId=${lineUserId}`, {
-        credentials: 'include', // สำคัญ! เพื่อให้ cookies ถูกส่งไปด้วย
+      const response = await apiClient.get('/user', {
+        params: { lineUserId }
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setDbUser(data.user);
-        return data.user;
-      }
+      const data = response.data;
+      setDbUser(data.user);
+      return data.user;
     } catch (error) {
       console.error('Error fetching user from database:', error);
+      return null;
     }
-    return null;
   };
 
   // ฟังก์ชันตรวจสอบ JWT Token ที่มีอยู่
   const checkExistingAuth = async () => {
     try {
-      const response = await fetch('/api/auth/verify', {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDbUser(data.user);
-        setIsAuthenticated(true);
-        return true;
-      }
+      const response = await apiClient.get('/auth/verify');
+      
+      const data = response.data;
+      setDbUser(data.user);
+      setIsAuthenticated(true);
+      return true;
     } catch (error) {
       console.error('Error checking existing auth:', error);
+      setIsAuthenticated(false);
+      return false;
     }
-    
-    setIsAuthenticated(false);
-    return false;
   };
 
   const refreshUserData = async () => {
@@ -207,10 +211,7 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       // เรียก API เพื่อ logout และลบ cookies
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await apiClient.post('/auth/logout');
 
       // Logout จาก LIFF
       const liff = (window as any).liff;
@@ -226,6 +227,12 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Logout error:', error);
+      // ถึงแม้ logout API จะ error ก็ยัง clear states
+      setProfile(null);
+      setDbUser(null);
+      setToken(null);
+      setIsLoggedIn(false);
+      setIsAuthenticated(false);
     }
   };
 
