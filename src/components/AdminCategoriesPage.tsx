@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Edit, Trash2, Search, Eye, EyeOff, Upload, X } from 'lucide-react'
 import axios from 'axios'
 import {
@@ -62,6 +62,166 @@ interface CategoryFormData {
   sortOrder: number
 }
 
+// Separate CategoryForm component outside of the main component
+const CategoryForm = React.memo(({ 
+  formData,
+  setFormData,
+  onSubmit, 
+  submitLabel, 
+  mode = 'create',
+  submitting,
+  uploadingImage,
+  imagePreview,
+  setImagePreview,
+  onImageUpload,
+  onRemoveImage,
+  showNotification
+}: { 
+  formData: CategoryFormData;
+  setFormData: React.Dispatch<React.SetStateAction<CategoryFormData>>;
+  onSubmit: () => void;
+  submitLabel: string;
+  mode?: 'create' | 'edit';
+  submitting: boolean;
+  uploadingImage: boolean;
+  imagePreview: string | null;
+  setImagePreview: React.Dispatch<React.SetStateAction<string | null>>;
+  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveImage: () => void;
+  showNotification: (type: 'success' | 'error', title: string, message: string) => void;
+}) => {
+  const idPrefix = mode;
+  
+  // Memoized handlers to prevent re-creation on every render
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, name: e.target.value }));
+  }, [setFormData]);
+
+  const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, description: e.target.value }));
+  }, [setFormData]);
+
+  const handleSortOrderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setFormData(prev => ({ ...prev, sortOrder: value }));
+  }, [setFormData]);
+
+  const handleIsActiveChange = useCallback((checked: boolean) => {
+    setFormData(prev => ({ ...prev, isActive: checked }));
+  }, [setFormData]);
+  
+  return (
+    <div className="grid gap-4 py-4">
+      <div className="grid gap-2">
+        <Label htmlFor={`${idPrefix}-name`}>Category Name *</Label>
+        <Input
+          id={`${idPrefix}-name`}
+          value={formData.name}
+          onChange={handleNameChange}
+          placeholder="Enter category name"
+          required
+        />
+      </div>
+      
+      <div className="grid gap-2">
+        <Label htmlFor={`${idPrefix}-description`}>Description</Label>
+        <Textarea
+          id={`${idPrefix}-description`}
+          value={formData.description}
+          onChange={handleDescriptionChange}
+          placeholder="Enter category description"
+          rows={3}
+        />
+      </div>
+      
+      <div className="grid gap-2">
+        <Label htmlFor={`${idPrefix}-image`}>Category Image</Label>
+        
+        {/* Image Preview */}
+        {imagePreview && (
+          <div className="relative inline-block">
+            <img
+              src={imagePreview}
+              alt="Category preview"
+              className="w-32 h-32 object-cover rounded-lg border"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+              onClick={onRemoveImage}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+
+        {/* Upload Button */}
+        {!imagePreview && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={onImageUpload}
+                className="hidden"
+                id={`${idPrefix}-image-upload`}
+                disabled={uploadingImage}
+              />
+              <Label
+                htmlFor={`${idPrefix}-image-upload`}
+                className={`flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors ${
+                  uploadingImage ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <Upload className="h-4 w-4" />
+                {uploadingImage ? 'Uploading...' : 'Upload Image'}
+              </Label>
+            </div>
+          </div>
+        )}
+        
+        <p className="text-xs text-gray-500">
+          Supported formats: JPG, PNG, GIF. Max size: 5MB
+        </p>
+      </div>
+      
+      <div className="grid gap-2">
+        <Label htmlFor={`${idPrefix}-sortOrder`}>Sort Order</Label>
+        <Input
+          id={`${idPrefix}-sortOrder`}
+          type="number"
+          value={formData.sortOrder}
+          onChange={handleSortOrderChange}
+          placeholder="0"
+        />
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Switch
+          id={`${idPrefix}-isActive`}
+          checked={formData.isActive}
+          onCheckedChange={handleIsActiveChange}
+        />
+        <Label htmlFor={`${idPrefix}-isActive`}>Active</Label>
+      </div>
+
+      <DialogFooter className="mt-4">
+        <Button
+          type="submit"
+          onClick={onSubmit}
+          disabled={submitting || uploadingImage || !formData.name.trim()}
+        >
+          {submitting ? 'Saving...' : submitLabel}
+        </Button>
+      </DialogFooter>
+    </div>
+  )
+});
+
+CategoryForm.displayName = 'CategoryForm';
+
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,16 +246,16 @@ export default function AdminCategoriesPage() {
   const [notificationMessage, setNotificationMessage] = useState('')
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success')
 
-  // Show notification modal
-  const showNotification = (type: 'success' | 'error', title: string, message: string) => {
+  // Memoized notification function
+  const showNotification = useCallback((type: 'success' | 'error', title: string, message: string) => {
     setNotificationType(type)
     setNotificationTitle(title)
     setNotificationMessage(message)
     setShowNotificationModal(true)
-  }
+  }, [])
 
   // Fetch categories
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       setLoading(true)
       const response = await axios.get('/api/admin/categories')
@@ -112,20 +272,22 @@ export default function AdminCategoriesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showNotification])
 
   useEffect(() => {
     fetchCategories()
-  }, [])
+  }, [fetchCategories])
 
-  // Filter categories based on search term
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Filter categories based on search term - memoized
+  const filteredCategories = React.useMemo(() => 
+    categories.filter(category =>
+      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    ), [categories, searchTerm]
   )
 
-  // Reset form
-  const resetForm = () => {
+  // Reset form - memoized
+  const resetForm = useCallback(() => {
     setFormData({
       name: '',
       description: '',
@@ -135,10 +297,10 @@ export default function AdminCategoriesPage() {
     })
     setSelectedCategory(null)
     setImagePreview(null)
-  }
+  }, [])
 
-  // Handle create
-  const handleCreate = async () => {
+  // Handle create - memoized
+  const handleCreate = useCallback(async () => {
     try {
       setSubmitting(true)
       const response = await axios.post('/api/admin/categories', formData)
@@ -159,10 +321,10 @@ export default function AdminCategoriesPage() {
     } finally {
       setSubmitting(false)
     }
-  }
+  }, [formData, resetForm, showNotification])
 
-  // Handle edit
-  const handleEdit = (category: Category) => {
+  // Handle edit - memoized
+  const handleEdit = useCallback((category: Category) => {
     setSelectedCategory(category)
     setFormData({
       name: category.name,
@@ -173,10 +335,10 @@ export default function AdminCategoriesPage() {
     })
     setImagePreview(category.imageUrl)
     setIsEditModalOpen(true)
-  }
+  }, [])
 
-  // Handle update
-  const handleUpdate = async () => {
+  // Handle update - memoized
+  const handleUpdate = useCallback(async () => {
     if (!selectedCategory) return
 
     try {
@@ -201,10 +363,10 @@ export default function AdminCategoriesPage() {
     } finally {
       setSubmitting(false)
     }
-  }
+  }, [selectedCategory, formData, resetForm, showNotification])
 
-  // Handle image upload
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image upload - memoized
+  const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -248,10 +410,10 @@ export default function AdminCategoriesPage() {
     } finally {
       setUploadingImage(false)
     }
-  }
+  }, [showNotification])
 
-  // Remove image
-  const handleRemoveImage = async () => {
+  // Remove image - memoized
+  const handleRemoveImage = useCallback(async () => {
     if (!formData.imageUrl) return
 
     try {
@@ -271,10 +433,10 @@ export default function AdminCategoriesPage() {
           : "An error occurred while removing image"
       )
     }
-  }
+  }, [formData.imageUrl, showNotification])
 
-  // Handle delete category
-  const handleDelete = async (categoryId: string) => {
+  // Handle delete category - memoized
+  const handleDelete = useCallback(async (categoryId: string) => {
     try {
       // Get the category to delete
       const categoryToDelete = categories.find(cat => cat.id === categoryId)
@@ -304,147 +466,7 @@ export default function AdminCategoriesPage() {
           : "An error occurred while deleting category"
       )
     }
-  }
-
-  // Category form component - แก้ไขแล้วเพื่อแก้ปัญหา ID collision
-  const CategoryForm = ({ 
-    onSubmit, 
-    submitLabel, 
-    mode = 'create' 
-  }: { 
-    onSubmit: () => void, 
-    submitLabel: string,
-    mode?: 'create' | 'edit'
-  }) => {
-    const idPrefix = mode;
-    
-    // Add handlers for each input field
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData(prev => ({ ...prev, name: e.target.value }));
-    };
-
-    const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setFormData(prev => ({ ...prev, description: e.target.value }));
-    };
-
-    const handleSortOrderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseInt(e.target.value) || 0;
-      setFormData(prev => ({ ...prev, sortOrder: value }));
-    };
-
-    const handleIsActiveChange = (checked: boolean) => {
-      setFormData(prev => ({ ...prev, isActive: checked }));
-    };
-    
-    return (
-      <div className="grid gap-4 py-4">
-        <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-name`}>Category Name *</Label>
-          <Input
-            id={`${idPrefix}-name`}
-            value={formData.name}
-            onChange={handleNameChange}
-            placeholder="Enter category name"
-            required
-          />
-        </div>
-        
-        <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-description`}>Description</Label>
-          <Textarea
-            id={`${idPrefix}-description`}
-            value={formData.description}
-            onChange={handleDescriptionChange}
-            placeholder="Enter category description"
-            rows={3}
-          />
-        </div>
-        
-        <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-image`}>Category Image</Label>
-          
-          {/* Image Preview */}
-          {imagePreview && (
-            <div className="relative inline-block">
-              <img
-                src={imagePreview}
-                alt="Category preview"
-                className="w-32 h-32 object-cover rounded-lg border"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                onClick={handleRemoveImage}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-
-          {/* Upload Button */}
-          {!imagePreview && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id={`${idPrefix}-image-upload`}
-                  disabled={uploadingImage}
-                />
-                <Label
-                  htmlFor={`${idPrefix}-image-upload`}
-                  className={`flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors ${
-                    uploadingImage ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploadingImage ? 'Uploading...' : 'Upload Image'}
-                </Label>
-              </div>
-            </div>
-          )}
-          
-          <p className="text-xs text-gray-500">
-            Supported formats: JPG, PNG, GIF. Max size: 5MB
-          </p>
-        </div>
-        
-        <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}-sortOrder`}>Sort Order</Label>
-          <Input
-            id={`${idPrefix}-sortOrder`}
-            type="number"
-            value={formData.sortOrder}
-            onChange={handleSortOrderChange}
-            placeholder="0"
-          />
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
-            id={`${idPrefix}-isActive`}
-            checked={formData.isActive}
-            onCheckedChange={handleIsActiveChange}
-          />
-          <Label htmlFor={`${idPrefix}-isActive`}>Active</Label>
-        </div>
-
-        <DialogFooter className="mt-4">
-          <Button
-            type="submit"
-            onClick={onSubmit}
-            disabled={submitting || uploadingImage || !formData.name.trim()}
-          >
-            {submitting ? 'Saving...' : submitLabel}
-          </Button>
-        </DialogFooter>
-      </div>
-    )
-  }
+  }, [categories, showNotification])
 
   if (loading) {
     return (
@@ -517,7 +539,7 @@ export default function AdminCategoriesPage() {
                 
                 <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={() => resetForm()}>
+                    <Button onClick={resetForm}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Category
                     </Button>
@@ -529,7 +551,20 @@ export default function AdminCategoriesPage() {
                         Add a new product category to organize your inventory.
                       </DialogDescription>
                     </DialogHeader>
-                    <CategoryForm onSubmit={handleCreate} submitLabel="Create Category" mode="create" />
+                    <CategoryForm 
+                      formData={formData}
+                      setFormData={setFormData}
+                      onSubmit={handleCreate} 
+                      submitLabel="Create Category" 
+                      mode="create"
+                      submitting={submitting}
+                      uploadingImage={uploadingImage}
+                      imagePreview={imagePreview}
+                      setImagePreview={setImagePreview}
+                      onImageUpload={handleImageUpload}
+                      onRemoveImage={handleRemoveImage}
+                      showNotification={showNotification}
+                    />
                   </DialogContent>
                 </Dialog>
               </div>
@@ -554,7 +589,7 @@ export default function AdminCategoriesPage() {
                   {!searchTerm && (
                     <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                       <DialogTrigger asChild>
-                        <Button onClick={() => resetForm()}>
+                        <Button onClick={resetForm}>
                           <Plus className="h-4 w-4 mr-2" />
                           Create First Category
                         </Button>
@@ -688,7 +723,20 @@ export default function AdminCategoriesPage() {
                   Update the category information below.
                 </DialogDescription>
               </DialogHeader>
-              <CategoryForm onSubmit={handleUpdate} submitLabel="Update Category" mode="edit" />
+              <CategoryForm 
+                formData={formData}
+                setFormData={setFormData}
+                onSubmit={handleUpdate} 
+                submitLabel="Update Category" 
+                mode="edit"
+                submitting={submitting}
+                uploadingImage={uploadingImage}
+                imagePreview={imagePreview}
+                setImagePreview={setImagePreview}
+                onImageUpload={handleImageUpload}
+                onRemoveImage={handleRemoveImage}
+                showNotification={showNotification}
+              />
             </DialogContent>
           </Dialog>
 
