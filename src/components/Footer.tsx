@@ -35,7 +35,7 @@ export default function Footer() {
                     <div className="space-y-4">
                         <h3 className="text-xl font-medium mb-6 text-gray-200">COMPANY</h3>
                         <ul className="space-y-3">
-                            <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                            <li><a href="/about" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
                                 <span className="transform group-hover:translate-x-1 transition-transform duration-300">Our Mission</span>
                             </a></li>
                             <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">

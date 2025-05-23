@@ -33,7 +33,7 @@ export default function Navbar() {
         { title: "Digital Gift Cards", href: "/gift-cards" },
         { title: "Locations", href: "/locations" },
         { title: "FAQs", href: "/faqs" },
-        { title: "Our Mission", href: "/mission" },
+        { title: "Our Mission", href: "/about" },
         { title: "Contact Us", href: "/contact" }
     ];
 
