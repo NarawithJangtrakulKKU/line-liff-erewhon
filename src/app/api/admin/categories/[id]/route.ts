@@ -49,7 +49,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
+    // Await params before destructuring
+    const resolvedParams = await Promise.resolve(params);
+    const { id } = resolvedParams;
     const body = await request.json()
     const { name, description, imageUrl, isActive, sortOrder } = body
 
