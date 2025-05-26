@@ -67,14 +67,14 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
       icon: <BarChart3 className="h-5 w-5" />
     },
     {
-      title: 'Products',
-      href: '/admin/products',
-      icon: <Package className="h-5 w-5" />
-    },
-    {
       title: 'Categories',
       href: '/admin/categories',
       icon: <Tag className="h-5 w-5" />
+    },
+    {
+      title: 'Products',
+      href: '/admin/products',
+      icon: <Package className="h-5 w-5" />
     },
     {
       title: 'Users',
