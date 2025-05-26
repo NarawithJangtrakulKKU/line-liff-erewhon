@@ -1,3 +1,4 @@
+'use client'
 import React, { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Search, ShoppingBag, User } from 'lucide-react'
 import axios from 'axios'
@@ -173,11 +174,13 @@ export default function HomePage() {
       {/* Popular Categories Section */}
       <section className="py-6 sm:py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center my-6 sm:my-8 md:my-10">
+          <div className="flex justify-between items-center">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Popular Categories</h2>
-            <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-              View All <ChevronRight className="w-4 h-4 ml-1" />
-            </button>
+              <Link href="/allcategories" className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
+                <button className="cursor-pointer text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
+              </Link>
           </div>
           
           <div className="relative">
