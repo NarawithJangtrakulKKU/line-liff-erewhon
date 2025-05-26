@@ -1,4 +1,3 @@
-'use client'
 import React, { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Search, ShoppingBag, User } from 'lucide-react'
 import axios from 'axios'
