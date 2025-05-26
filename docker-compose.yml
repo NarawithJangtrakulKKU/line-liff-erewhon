@@ -12,6 +12,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - app-network
+      
 
   pgadmin:
     image: dpage/pgadmin4:latest
