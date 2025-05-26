@@ -1,7 +1,7 @@
 import Footer from '@/components/Footer'
 import HomePage from '@/components/HomePage'
 import Navbar from '@/components/Navbar'
-import HomePage from '@/components/HomePage'
+
 import React from 'react'
 
 export default function Page() {

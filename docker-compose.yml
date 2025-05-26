@@ -12,6 +12,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - app-network
+      
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -31,4 +32,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres-data:
