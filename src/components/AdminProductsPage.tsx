@@ -986,12 +986,12 @@ export default function AdminProductsPage() {
                                     <AlertDialogTitle>Delete Product</AlertDialogTitle>
                                     <AlertDialogDescription>
                                       Are you sure you want to delete "{product.name}"? This action cannot be undone.
-                                      {product.images.length > 0 && (
-                                        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                                          <strong>Warning:</strong> This will also delete {product.images.length} associated image(s).
-                                        </div>
-                                      )}
                                     </AlertDialogDescription>
+                                    {product.images.length > 0 && (
+                                      <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                        <strong>Warning:</strong> This will also delete {product.images.length} associated image(s).
+                                      </div>
+                                    )}
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>

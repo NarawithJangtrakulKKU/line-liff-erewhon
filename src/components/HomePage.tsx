@@ -1,6 +1,8 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Search, ShoppingBag, User } from 'lucide-react'
+import axios from 'axios'
+import Link from 'next/link'
 
 interface Category {
   id: string
@@ -65,11 +67,9 @@ export default function HomePage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/categories')
-        const data = await response.json()
-        
-        if (data.success && data.categories) {
-          setCategories(data.categories)
+        const response = await axios.get('/api/categories')
+        if (response.data.success && response.data.categories) {
+          setCategories(response.data.categories)
         }
       } catch (error) {
         console.error('Error fetching categories:', error)
@@ -121,11 +121,9 @@ export default function HomePage() {
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        const response = await fetch('/api/products/featured')
-        const data = await response.json()
-        
-        if (data.success && data.products) {
-          const formattedProducts = data.products.map((product: any) => ({
+        const response = await axios.get('/api/products/featured')
+        if (response.data.success && response.data.products) {
+          const formattedProducts = response.data.products.map((product: any) => ({
             id: product.id,
             name: product.name,
             description: product.description,
@@ -290,9 +288,11 @@ export default function HomePage() {
           <div className="flex justify-between items-center mb-6 sm:mb-8">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Featured Products</h2>
             <div className="flex items-center space-x-2">
-              <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                View All
-              </button>
+                <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
+                  <Link href="/allfeatures">
+                    View All
+                  </Link>
+                </button>
               <button
                 onClick={prevHotBarSlide}
                 className="p-1.5 sm:p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
