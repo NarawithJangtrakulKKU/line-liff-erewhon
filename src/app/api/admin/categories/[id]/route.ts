@@ -10,7 +10,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
+    const resolvedParams = await params; // Await params
+    const { id } = resolvedParams;
 
     const category = await prisma.category.findUnique({
       where: { id },
@@ -49,8 +50,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Await params before destructuring
-    const resolvedParams = await Promise.resolve(params);
+    const resolvedParams = await params; // Await params
     const { id } = resolvedParams;
     const body = await request.json()
     const { name, description, imageUrl, isActive, sortOrder } = body
@@ -133,8 +133,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Await params before destructuring
-    const resolvedParams = await Promise.resolve(params);
+    const resolvedParams = await Promise.resolve(params); // Await params
     const { id } = resolvedParams;
 
     // Check if category exists
