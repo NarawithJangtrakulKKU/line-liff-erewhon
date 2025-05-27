@@ -171,37 +171,16 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-white">
-      {/* Popular Categories Section */}
-      <section className="py-6 sm:py-8 md:py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Popular Categories</h2>
-              <Link href="/allcategories" className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                <button className="cursor-pointer text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                  View All <ChevronRight className="w-4 h-4 ml-1" />
-                </button>
-              </Link>
-          </div>
-          
-          <div className="relative">
-            <div className="flex overflow-x-auto space-x-4 sm:space-x-6 pb-4 scrollbar-hide">
-              {isCategoriesLoading ? (
-                // Loading skeleton for categories
-                [...Array(8)].map((_, index) => (
-                  <div key={index} className="flex-none w-24 sm:w-28 md:w-32 text-center">
-                    <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 mx-auto mb-2 sm:mb-3 rounded-2xl bg-gray-200 animate-pulse" />
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-16 sm:w-20 mx-auto animate-pulse" />
-                  </div>
-                ))
-              ) : (
-                categories.map((category) => (
-                  <div key={category.id} className="flex-none w-24 sm:w-28 md:w-32 text-center group cursor-pointer">
-                    <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 mx-auto mb-2 sm:mb-3 rounded-2xl overflow-hidden bg-gray-100 group-hover:scale-105 transition-transform">
-                      <img
-                        src={category.imageUrl || '/api/placeholder/120/120'}
-                        alt={category.name}
-                        className="w-full h-full object-cover"
-                      />
+            {/* Popular Categories Section */}
+            <section className="py-6 sm:py-8 md:py-12 px-4">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Popular Categories</h2>
+                        <Link href="/allcategories" className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
+                            <button className="cursor-pointer text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
+                                View All <ChevronRight className="w-4 h-4 ml-1" />
+                            </button>
+                        </Link>
                     </div>
 
                     <div className="relative">
@@ -295,8 +274,7 @@ export default function HomePage() {
                                 <button
                                     key={index}
                                     onClick={() => setCurrentSlide(index)}
-                                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${index === currentSlide ? 'bg-gray-800' : 'bg-gray-400'
-                                        }`}
+                                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${index === currentSlide ? 'bg-gray-800' : 'bg-gray-400'}`}
                                 />
                             ))}
                         </div>
