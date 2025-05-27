@@ -8,7 +8,9 @@ export default function Page() {
   return (
     <div>
       <Navbar />
-      <HomePage />
+      <div className="pt-16">
+        <HomePage />
+      </div>
       <Footer />
     </div>
   )

@@ -1,56 +1,108 @@
-import React from 'react'
+'use client'
+import React, { useEffect, useState } from 'react'
+import { Skeleton } from "@/components/ui/skeleton"
+import axios from 'axios'
+
+interface Category {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    description: string | null;
+    isActive: boolean;
+    sortOrder: number;
+}
 
 export default function AllCategoriesPage() {
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get('/api/categories');
+                if (response.data.success) {
+                    setCategories(response.data.categories);
+                } else {
+                    setError('Failed to fetch categories');
+                }
+            } catch (err) {
+                setError('An error occurred while fetching categories');
+                console.error('Error fetching categories:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCategories();
+    }, []);
 
-    const categories = [
-        { name: "Beverages", image: "/images/Beverages.png" },
-        { name: "Pantry", image: "/images/436e3b677d7a4394fdca3f35e8f731e5.webp" },
-        { name: "Snacks & Candy", image: "/images/Snacks & Candy.png" },
-        { name: "Produce", image: "/images/Produce.png" },
-        { name: "Health & Wellness", image: "/images/Health & Wellness.png" },
-        { name: "Dairy & Eggs", image: "/images/egg1.png" },
-        { name: "Meat & Seafood", image: "/images/meatt.png" },
-        { name: "Household", image: "/images/Household.png" },
-        { name: "Personal Care & Beauty", image: "/images/Personal.png" },
-        { name: "Breads", image: "/images/Breads.png" },
-        { name: "Alcohol", image: "/images/alcohol.png" },
-        { name: "Frozen", image: "/images/frozen.png" },
-        { name: "Erewhon Merch", image: "/images/erewhon.png" },
-        { name: "Home Care", image: "/images/home.png" },
-        { name: "Other", image: "/images/other.png" },
-    ];
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="text-center">
+                    <h2 className="text-2xl font-semibold text-red-600 mb-2">Error</h2>
+                    <p className="text-gray-600">{error}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen flex flex-col bg-white">
             {/* Hero Sections */}
-            <div className="container mx-auto px-4 py-4 grid grid-cols-2 gap-4">
-                <a href="#">
-                    <div className="relative overflow-hidden rounded-lg h-32 md:h-40 bg-gray-300">
-                        <img src="/images/thecafe.jpeg" alt="The Cafe" className="w-full h-full object-cover" />
+            <div className="container mx-auto px-4 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <a href="#" className="block">
+                    <div className="relative overflow-hidden rounded-2xl h-32 md:h-40 lg:h-48 bg-gray-300">
+                        <img 
+                            src="/images/carousel/pexels-ash-craig-122861-376464.jpg" 
+                            alt="The Cafe" 
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                        />
                     </div>
                 </a>
-                <div className="relative overflow-hidden rounded-lg h-32 md:h-40 bg-gray-300">
-                    <a href="#">
-                        <img src="/images/thetonicbar.jpeg" alt="The Tonic Bar" className="w-full h-full object-cover" />
-                    </a>
-
-                </div>
+                <a href="#" className="block">
+                    <div className="relative overflow-hidden rounded-2xl h-32 md:h-40 lg:h-48 bg-gray-300">
+                        <img 
+                            src="/images/carousel/pexels-ella-olsson-572949-1640777.jpg" 
+                            alt="The Tonic Bar" 
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                        />
+                    </div>
+                </a>
             </div>
 
             {/* Category Grid */}
             <div className="container mx-auto px-4 py-4">
-                <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-                    {categories.map((category, index) => (
-                        <a key={index} href={`/category/${category.name.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`} className="group">
-                            <div className="bg-gray-100 rounded-lg p-4 flex flex-col items-center justify-center aspect-square">
-                                <img src={category.image} alt={category.name} className="w-100 h-50 object-contain mb-2" />
-                                <span className="text-center text-sm font-medium">{category.name}</span>
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+                    {loading ? (
+                        Array.from({ length: 10 }).map((_, index) => (
+                            <div key={index} className="flex flex-col items-center">
+                                <Skeleton className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl mb-3" />
+                                <Skeleton className="w-16 h-4 sm:w-20 sm:h-5 rounded mb-1" />
                             </div>
-                        </a>
-                    ))}
+                        ))
+                    ) : (
+                        categories.map((category) => (
+                            <a 
+                                key={category.id} 
+                                href={`/category/${category.name.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`}
+                                className="flex flex-col items-center group"
+                            >
+                                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-gray-100 mb-3 group-hover:scale-105 transition-transform">
+                                    <img 
+                                        src={category.imageUrl || '/images/placeholder.png'} 
+                                        alt={category.name} 
+                                        className="w-full h-full object-cover" 
+                                    />
+                                </div>
+                                <span className="text-center text-xs sm:text-base md:text-lg font-semibold text-gray-700 group-hover:text-orange-600 transition-colors">
+                                    {category.name}
+                                </span>
+                            </a>
+                        ))
+                    )}
                 </div>
             </div>
-
         </div>
-    )
+    );
 }
