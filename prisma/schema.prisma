@@ -144,6 +144,8 @@ model Order {
   status          OrderStatus @default(PENDING)
   paymentStatus   PaymentStatus @default(PENDING)
   paymentMethod   PaymentMethod?
+  shippingMethod  ShippingMethod?
+  paymentSlipUrl  String?
   subtotal        Decimal     @db.Decimal(10, 2) // ยอดรวมสินค้า
   shippingFee     Decimal     @db.Decimal(10, 2) @default(0) // ค่าจัดส่ง
   tax             Decimal     @db.Decimal(10, 2) @default(0) // ภาษี
@@ -242,4 +244,9 @@ enum PaymentMethod {
   BANK_TRANSFER // โอนเงิน
   COD           // เก็บเงินปลายทาง
   LINE_PAY      // LINE Pay
+}
+
+enum ShippingMethod {
+  TH_POST // พัสดุธรรมดา
+  TH_EXPRESS // พัสดุด่วน
 }

@@ -354,7 +354,7 @@ export default function CartPage() {
               variant="ghost"
               size="sm"
               onClick={() => router.back()}
-              className="hover:bg-orange-100"
+              className="cursor-pointer hover:bg-orange-100"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               กลับ
@@ -409,7 +409,7 @@ export default function CartPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => router.push('/home')}
-                      className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                      className="cursor-pointer text-orange-600 border-orange-300 hover:bg-orange-50"
                     >
                       เพิ่มสินค้า
                     </Button>
@@ -448,7 +448,7 @@ export default function CartPage() {
                             
                             {/* Wishlist & Remove */}
                             <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-500">
+                              <Button variant="ghost" size="sm" className="cursor-pointer text-gray-400 hover:text-red-500">
                                 <Heart className="h-4 w-4" />
                               </Button>
                               <AlertDialog>
@@ -456,7 +456,7 @@ export default function CartPage() {
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    className="text-gray-400 hover:text-red-500"
+                                    className="cursor-pointer text-gray-400 hover:text-red-500"
                                     disabled={updating === item.id}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -493,7 +493,7 @@ export default function CartPage() {
                                   size="sm"
                                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
                                   disabled={item.quantity <= 1 || updating === item.id || !item.product}
-                                  className="h-8 w-8 p-0"
+                                  className="cursor-pointer h-8 w-8 p-0"
                                 >
                                   <Minus className="h-3 w-3" />
                                 </Button>
@@ -505,7 +505,7 @@ export default function CartPage() {
                                   size="sm"
                                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
                                   disabled={item.product ? (item.quantity >= item.product.stock || updating === item.id) : true}
-                                  className="h-8 w-8 p-0"
+                                  className="cursor-pointer h-8 w-8 p-0"
                                 >
                                   <Plus className="h-3 w-3" />
                                 </Button>
@@ -615,7 +615,7 @@ export default function CartPage() {
                   <div className="space-y-3 pt-4">
                     <Button
                       onClick={handleCheckout}
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 text-lg font-medium"
+                      className="cursor-pointer w-full bg-orange-500 hover:bg-orange-600 text-white py-3 text-lg font-medium"
                     >
                       <CreditCard className="h-5 w-5 mr-2" />
                       ดำเนินการชำระเงิน

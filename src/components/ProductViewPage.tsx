@@ -14,7 +14,8 @@ import {
   Plus, 
   Tag,
   ImageIcon,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -95,6 +96,12 @@ interface RelatedProduct {
   reviewCount: number;
 }
 
+// เพิ่ม interface สำหรับ notification
+interface Notification {
+  type: 'success' | 'error';
+  message: string;
+}
+
 interface ProductViewPageProps {
   productId: string;
 }
@@ -109,6 +116,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
   const [addingToCart, setAddingToCart] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [notification, setNotification] = useState<Notification | null>(null);
 
   // ดึงข้อมูลสินค้าตาม ID
   useEffect(() => {
@@ -155,14 +163,21 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
     }
   };
 
-  // เพิ่มสินค้าลงตะกร้า
+  // เพิ่มฟังก์ชันสำหรับแสดง notification
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    // ซ่อน notification หลังจาก 3 วินาที
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // แก้ไขฟังก์ชัน addToCart
   const addToCart = async () => {
     if (!product || !dbUser) {
       if (!isLoggedIn) {
-        alert('Please login to add items to cart');
+        showNotification('error', 'กรุณาเข้าสู่ระบบเพื่อเพิ่มสินค้าลงตะกร้า');
         return;
       }
-      alert('User information not available');
+      showNotification('error', 'ไม่พบข้อมูลผู้ใช้');
       return;
     }
     
@@ -176,7 +191,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
       });
       
       // แสดงข้อความสำเร็จ
-      alert(`Added ${quantity} item(s) of ${product.name} to cart!`);
+      showNotification('success', `เพิ่ม ${quantity} ชิ้นของ ${product.name} ลงตะกร้าแล้ว`);
       
       // รีเซ็ตจำนวนกลับเป็น 1
       setQuantity(1);
@@ -184,9 +199,9 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
     } catch (error) {
       console.error('Error adding to cart:', error);
       if (axios.isAxiosError(error)) {
-        alert(error.response?.data?.error || 'Failed to add to cart');
+        showNotification('error', error.response?.data?.error || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้');
       } else {
-        alert('Failed to add to cart. Please try again.');
+        showNotification('error', 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
       }
     } finally {
       setAddingToCart(false);
@@ -236,7 +251,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
     ));
   };
 
-  // แชร์สินค้า
+  // แก้ไขฟังก์ชัน shareProduct
   const shareProduct = async () => {
     if (navigator.share) {
       try {
@@ -245,13 +260,15 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
           text: product?.description,
           url: window.location.href,
         });
+        showNotification('success', 'แชร์สินค้าสำเร็จ');
       } catch (error) {
         console.log('Error sharing:', error);
+        showNotification('error', 'ไม่สามารถแชร์สินค้าได้');
       }
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
-      alert('Product link copied to clipboard!');
+      showNotification('success', 'คัดลอกลิงก์สินค้าแล้ว');
     }
   };
 
@@ -319,6 +336,21 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-2 ${
+          notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`}>
+          <span>{notification.message}</span>
+          <button 
+            onClick={() => setNotification(null)}
+            className="ml-2 hover:opacity-80"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <Breadcrumb className="mb-6">

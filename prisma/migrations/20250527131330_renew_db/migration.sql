@@ -1,4 +1,7 @@
 -- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('CUSTOMER', 'ADMIN');
+
+-- CreateEnum
 CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED');
 
 -- CreateEnum
@@ -6,6 +9,9 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUNDED');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethod" AS ENUM ('CREDIT_CARD', 'PROMPTPAY', 'BANK_TRANSFER', 'COD', 'LINE_PAY');
+
+-- CreateEnum
+CREATE TYPE "ShippingMethod" AS ENUM ('TH_POST', 'TH_EXPRESS');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -15,6 +21,8 @@ CREATE TABLE "users" (
     "pictureUrl" TEXT,
     "email" TEXT,
     "phone" TEXT,
+    "role" "UserRole" NOT NULL DEFAULT 'CUSTOMER',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -106,6 +114,8 @@ CREATE TABLE "orders" (
     "status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
     "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "paymentMethod" "PaymentMethod",
+    "shippingMethod" "ShippingMethod",
+    "paymentSlipUrl" TEXT,
     "subtotal" DECIMAL(10,2) NOT NULL,
     "shippingFee" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "tax" DECIMAL(10,2) NOT NULL DEFAULT 0,
