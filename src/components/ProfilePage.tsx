@@ -73,7 +73,7 @@ export default function ProfilePage() {
       title: "ประวัติการสั่งซื้อ",
       description: "ดูประวัติการซื้อสินค้า",
       icon: Package,
-      href: "/order-history",
+      href: "/purchase-history",
       color: "from-green-400 to-green-500"
     },
     {

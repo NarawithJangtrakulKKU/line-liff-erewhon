@@ -86,16 +86,6 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
         href: '/admin/orders',
         icon: <Package className="h-5 w-5" />
     },
-    {
-        title: 'Shipments',
-        href: '/admin/shipments',
-        icon: <TruckElectric className="h-5 w-5" />
-    },
-    {
-        title: 'Settings',
-        href: '/admin/settings',
-        icon: <Settings className="h-5 w-5" />
-    },
   ];
 
   // เมนูสำหรับ Desktop
