@@ -1,14 +1,14 @@
-import React from 'react'
-import Navbar from '@/components/Navbar'
-import AllFeaturesPage from '@/components/AllFeaturesPage'
 import Footer from '@/components/Footer'
+import Navbar from '@/components/Navbar'
+import ProductsPage from '@/components/ProductsPage'
+import React from 'react'
 
 export default function Page() {
   return (
     <div>
         <Navbar />
         <div className='pt-16'>
-          <AllFeaturesPage />
+            <ProductsPage />
         </div>
         <Footer />
     </div>

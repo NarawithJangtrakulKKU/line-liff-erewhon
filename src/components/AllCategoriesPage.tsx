@@ -23,6 +23,7 @@ export default function AllCategoriesPage() {
                 const response = await axios.get('/api/categories');
                 if (response.data.success) {
                     setCategories(response.data.categories);
+                    console.log('Fetched categories in AllCategoriesPage:', response.data.categories);
                 } else {
                     setError('Failed to fetch categories');
                 }
@@ -85,7 +86,7 @@ export default function AllCategoriesPage() {
                         categories.map((category) => (
                             <a 
                                 key={category.id} 
-                                href={`/category/${category.name.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`}
+                                href={`/allcategories/${category.id}`}
                                 className="flex flex-col items-center group"
                             >
                                 <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-gray-100 mb-3 group-hover:scale-105 transition-transform">
