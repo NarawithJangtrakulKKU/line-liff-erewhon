@@ -310,6 +310,7 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-white">
+
       {/* Popular Categories Section */}
       <section className="py-6 sm:py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
@@ -423,7 +424,7 @@ export default function HomePage() {
               </div>
           </div>
       </section>
-
+        
       {/* Featured Products Section */}
       <section className="py-6 sm:py-8 md:py-12 px-4 bg-gray-50">
           <div className="max-w-7xl mx-auto">
