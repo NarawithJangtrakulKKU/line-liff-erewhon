@@ -220,3 +220,60 @@ export async function GET(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { itemId, quantity } = body;
+
+    if (!itemId || typeof quantity !== 'number') {
+      return NextResponse.json(
+        { error: 'Item ID and quantity are required' },
+        { status: 400 }
+      );
+    }
+
+    const cartItem = await prisma.cartItem.update({
+      where: { id: itemId },
+      data: { quantity },
+    });
+
+    return NextResponse.json({ success: true, cartItem });
+  } catch (error) {
+    console.error('Error updating cart item:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { itemId } = body;
+
+    if (!itemId) {
+      return NextResponse.json(
+        { error: 'Item ID is required' },
+        { status: 400 }
+      );
+    }
+
+    await prisma.cartItem.delete({
+      where: { id: itemId },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting cart item:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
