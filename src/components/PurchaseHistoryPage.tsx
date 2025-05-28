@@ -28,6 +28,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 
 interface OrderItem {
   id: string
@@ -37,7 +39,8 @@ interface OrderItem {
   product: {
     id: string
     name: string
-    imageUrl?: string
+    image?: string
+    images?: { imageUrl: string }[]
   }
 }
 
@@ -137,6 +140,12 @@ export default function PurchaseHistoryPage() {
   const [loading, setLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showOrderDetail, setShowOrderDetail] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<(OrderItem & { orderId?: string }) | null>(null)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   useEffect(() => {
     if (isInitialized && !isLoggedIn) {
@@ -176,6 +185,74 @@ export default function PurchaseHistoryPage() {
     setShowOrderDetail(true)
   }
 
+  const handleReviewProduct = (orderItem: OrderItem, orderId: string) => {
+    setSelectedProduct({ ...orderItem, orderId })
+    setReviewRating(0)
+    setReviewComment('')
+    setShowReviewModal(true)
+    setShowOrderDetail(false)
+  }
+
+  const handleSubmitReview = async () => {
+    if (!selectedProduct || !dbUser || reviewRating === 0) {
+      alert('กรุณาให้คะแนนสินค้า')
+      return
+    }
+
+    console.log('Submitting review with data:', {
+      userId: dbUser.id,
+      productId: selectedProduct.product.id,
+      orderId: selectedProduct.orderId,
+      rating: reviewRating,
+      comment: reviewComment.trim() || null
+    })
+
+    try {
+      setSubmittingReview(true)
+      
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: dbUser.id,
+          productId: selectedProduct.product.id,
+          orderId: selectedProduct.orderId,
+          rating: reviewRating,
+          comment: reviewComment.trim() || null
+        })
+      })
+
+      const result = await response.json()
+      console.log('API response:', { status: response.status, result })
+
+      if (response.ok) {
+        setShowReviewModal(false)
+        setSelectedProduct(null)
+        setReviewRating(0)
+        setReviewComment('')
+        setShowSuccessModal(true)
+      } else {
+        // Handle specific error cases
+        if (response.status === 403) {
+          alert(result.message || 'คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
+        } else {
+          alert(result.message || 'เกิดข้อผิดพลาดในการส่งรีวิว')
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error)
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
+  const getProductImageUrl = (product: OrderItem['product']) => {
+    return product.images?.[0]?.imageUrl || product.image || undefined
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
@@ -191,6 +268,34 @@ export default function PurchaseHistoryPage() {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const StarRating = ({ rating, onRatingChange, readonly = false }: { 
+    rating: number, 
+    onRatingChange?: (rating: number) => void,
+    readonly?: boolean 
+  }) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            disabled={readonly}
+            onClick={() => !readonly && onRatingChange?.(star)}
+            className={`${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform`}
+          >
+            <Star
+              className={`h-6 w-6 ${
+                star <= rating
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-300'
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    )
   }
 
   if (!isInitialized) {
@@ -368,9 +473,9 @@ export default function PurchaseHistoryPage() {
                       <div className="space-y-2 mb-4">
                         {order.orderItems.slice(0, 2).map((item) => (
                           <div key={item.id} className="flex items-center gap-3 text-sm">
-                            {item.product.imageUrl && (
+                            {getProductImageUrl(item.product) && (
                               <img
-                                src={item.product.imageUrl}
+                                src={getProductImageUrl(item.product)}
                                 alt={item.product.name}
                                 className="w-8 h-8 rounded object-cover"
                               />
@@ -490,9 +595,9 @@ export default function PurchaseHistoryPage() {
                     <div className="space-y-3">
                       {selectedOrder.orderItems.map((item) => (
                         <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          {item.product.imageUrl && (
+                          {getProductImageUrl(item.product) && (
                             <img
-                              src={item.product.imageUrl}
+                              src={getProductImageUrl(item.product)}
                               alt={item.product.name}
                               className="w-12 h-12 rounded object-cover"
                             />
@@ -555,18 +660,34 @@ export default function PurchaseHistoryPage() {
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-4">
                     {selectedOrder.status === 'DELIVERED' && (
-                      <Button
-                        variant="outline"
-                        className="flex items-center gap-2"
-                        onClick={() => {
-                          // Navigate to review page
-                          setShowOrderDetail(false)
-                          // router.push(`/review/${selectedOrder.id}`)
-                        }}
-                      >
-                        <Star className="h-4 w-4" />
-                        รีวิวสินค้า
-                      </Button>
+                      <div className="space-y-2 w-full">
+                        <h4 className="font-medium text-gray-900">รีวิวสินค้า</h4>
+                        <div className="grid gap-2">
+                          {selectedOrder.orderItems.map((item) => (
+                            <Button
+                              key={item.id}
+                              variant="outline"
+                              className="flex items-center justify-between p-3 h-auto"
+                              onClick={() => handleReviewProduct(item, selectedOrder.id)}
+                            >
+                              <div className="flex items-center gap-3">
+                                {getProductImageUrl(item.product) && (
+                                  <img
+                                    src={getProductImageUrl(item.product)}
+                                    alt={item.product.name}
+                                    className="w-8 h-8 rounded object-cover"
+                                  />
+                                )}
+                                <span className="text-left">{item.product.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Star className="h-4 w-4" />
+                                <span className="text-sm">รีวิว</span>
+                              </div>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                     
                     <Button
@@ -583,6 +704,145 @@ export default function PurchaseHistoryPage() {
                   </div>
                 </div>
               )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Review Modal */}
+          <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5" />
+                  รีวิวสินค้า
+                </DialogTitle>
+                <DialogDescription>
+                  แบ่งปันประสบการณ์การใช้งานสินค้าของคุณ
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedProduct && (
+                <div className="space-y-6">
+                  {/* Product Info */}
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    {getProductImageUrl(selectedProduct.product) && (
+                      <img
+                        src={getProductImageUrl(selectedProduct.product)}
+                        alt={selectedProduct.product.name}
+                        className="w-12 h-12 rounded object-cover"
+                      />
+                    )}
+                    <div>
+                      <h4 className="font-medium">{selectedProduct.product.name}</h4>
+                      <p className="text-sm text-gray-500">
+                        จำนวน: {selectedProduct.quantity} ชิ้น
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Rating */}
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">ให้คะแนนสินค้า *</Label>
+                    <div className="flex items-center gap-3">
+                      <StarRating 
+                        rating={reviewRating} 
+                        onRatingChange={setReviewRating}
+                      />
+                      <span className="text-sm text-gray-500">
+                        {reviewRating > 0 && (
+                          reviewRating === 1 ? 'แย่มาก' :
+                          reviewRating === 2 ? 'แย่' :
+                          reviewRating === 3 ? 'ปานกลาง' :
+                          reviewRating === 4 ? 'ดี' : 'ดีมาก'
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Comment */}
+                  <div className="space-y-2">
+                    <Label htmlFor="review-comment" className="text-base font-medium">
+                      ความคิดเห็น (ไม่บังคับ)
+                    </Label>
+                    <Textarea
+                      id="review-comment"
+                      placeholder="แบ่งปันประสบการณ์การใช้งานสินค้าของคุณ..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      rows={4}
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-gray-500 text-right">
+                      {reviewComment.length}/500 ตัวอักษร
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowReviewModal(false)}
+                      className="flex-1"
+                      disabled={submittingReview}
+                    >
+                      ยกเลิก
+                    </Button>
+                    <Button
+                      onClick={handleSubmitReview}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600"
+                      disabled={submittingReview || reviewRating === 0}
+                    >
+                      {submittingReview ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          กำลังส่ง...
+                        </div>
+                      ) : (
+                        'ส่งรีวิว'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Success Modal */}
+          <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-6 w-6" />
+                  รีวิวสำเร็จ!
+                </DialogTitle>
+                <DialogDescription>
+                  ขอบคุณสำหรับการรีวิวสินค้า ความคิดเห็นของคุณจะช่วยให้ลูกค้าคนอื่นๆ ตัดสินใจได้ดีขึ้น
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {/* Success Icon and Message */}
+                <div className="text-center py-6">
+                  <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    รีวิวของคุณถูกบันทึกแล้ว
+                  </h3>
+                  <p className="text-gray-600">
+                    ขอบคุณที่แบ่งปันประสบการณ์การใช้งานสินค้า
+                  </p>
+                </div>
+
+                {/* Action Button */}
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => setShowSuccessModal(false)}
+                    className="bg-green-500 hover:bg-green-600 px-8"
+                  >
+                    เรียบร้อย
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
