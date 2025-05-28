@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import Link from "next/link";
 
 export default function Footer() {
     return (
@@ -13,84 +15,102 @@ export default function Footer() {
 
                 {/* Main Footer Content */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 mb-16">
-                    {/* Shop Column */}
+                    {/* SHOP */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-medium mb-6 text-gray-200">SHOP</h3>
                         <ul className="space-y-3">
-                            {["Delivery | Pickup", "Ship Anywhere", "Catering", "Gift Cards"].map((text) => (
-                                <li key={text}>
-                                    <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                        <span className="transform group-hover:translate-x-1 transition-transform duration-300">
-                                            {text}
-                                        </span>
-                                    </a>
-                                </li>
-                            ))}
+                            <li>
+                                <Link href="/home" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Delivery | Pickup</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/home" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Ship Anywhere</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/catering" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Catering</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/gift-cards" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Gift Cards</span>
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
-                    {/* Company Column */}
+                    {/* COMPANY */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-medium mb-6 text-gray-200">COMPANY</h3>
                         <ul className="space-y-3">
-                            {["Our Mission", "Locations", "Membership", "Careers"].map((text) => (
-                                <li key={text}>
-                                    <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                        <span className="transform group-hover:translate-x-1 transition-transform duration-300">
-                                            {text}
-                                        </span>
-                                    </a>
-                                </li>
-                            ))}
+                            <li>
+                                <Link href="/about" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Our Mission</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/locations" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Locations</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/careers" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Careers</span>
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
-                    {/* Connect Column */}
+                    {/* CONNECT */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-medium mb-6 text-gray-200">CONNECT</h3>
                         <ul className="space-y-3">
-                            {["FAQs", "Contact Us", "Vendor Submission", "Vendor Dashboard"].map((text) => (
-                                <li key={text}>
-                                    <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                        <span className="transform group-hover:translate-x-1 transition-transform duration-300">
-                                            {text}
-                                        </span>
-                                    </a>
-                                </li>
-                            ))}
+                            <li>
+                                <Link href="/faqs" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">FAQs</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/contact" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Contact Us</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/vendor-submission" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Vendor Submission</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/vendor-dashboard" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Vendor Dashboard</span>
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
-                    {/* App Promotion */}
+                    {/* APP */}
                     <div className="space-y-4">
                         <h3 className="text-xl font-medium mb-6 text-gray-200">THE EREWHON APP</h3>
                         <p className="text-gray-400 mb-4">Made with your lifestyle in mind</p>
-                        <a href="#" className="inline-block text-gray-200 hover:text-white mb-6 underline-offset-4 hover:underline transition-all duration-300">
+                        <Link href="/app-download" className="inline-block text-gray-200 hover:text-white mb-6 underline-offset-4 hover:underline transition-all duration-300">
                             Download Now
-                        </a>
-                        {/* Optional image or promo */}
+                        </Link>
                     </div>
                 </div>
 
-                {/* Bottom Links and Newsletter */}
+                {/* Bottom Links */}
                 <div className="border-t border-gray-800 pt-8 flex flex-col gap-6 lg:flex-row lg:justify-between lg:items-center">
-                    {/* Links */}
                     <div className="w-full lg:w-auto">
                         <ul className="flex flex-wrap gap-x-6 gap-y-3">
-                            {[
-                                "Terms & Conditions",
-                                "Privacy Policy",
-                                "Product Recalls",
-                                "Notice At Collection",
-                                "Purchase Order Terms",
-                                "Food Allergy Disclaimer",
-                            ].map((text) => (
-                                <li key={text}>
-                                    <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">
-                                        {text}
-                                    </a>
-                                </li>
-                            ))}
+                            <li><Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Terms & Conditions</Link></li>
+                            <li><Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Privacy Policy</Link></li>
+                            <li><Link href="/recalls" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Product Recalls</Link></li>
+                            <li><Link href="/collection-notice" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Notice At Collection</Link></li>
+                            <li><Link href="/purchase-terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Purchase Order Terms</Link></li>
+                            <li><Link href="/food-allergy" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Food Allergy Disclaimer</Link></li>
                         </ul>
                     </div>
 

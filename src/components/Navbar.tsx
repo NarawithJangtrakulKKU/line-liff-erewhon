@@ -55,7 +55,6 @@ export default function Navbar() {
         { title: "Delivery | Pickup", href: "/home" },
         { title: "Ship Anywhere", href: "/shipping" },
         { title: "Catering", href: "/catering" },
-        { title: "Membership", href: "/membership" },
         { title: "Digital Gift Cards", href: "/gift-cards" },
         { title: "Locations", href: "/locations" },
         { title: "FAQs", href: "/faqs" },
@@ -65,11 +64,10 @@ export default function Navbar() {
 
     return (
         <>
-            <nav className={`fixed w-full z-50 transition-all duration-500 ease-out ${
-                scrolled 
-                    ? "bg-black/90 backdrop-blur-md shadow-lg py-2 border-b border-gray-800" 
+            <nav className={`fixed w-full z-50 transition-all duration-500 ease-out ${scrolled
+                    ? "bg-black/90 backdrop-blur-md shadow-lg py-2 border-b border-gray-800"
                     : "bg-black/80 py-4"
-            }`}>
+                }`}>
                 <div className="w-full px-4">
                     <div className="flex items-center justify-between">
                         {/* ส่วนซ้าย - เมนูและโลโก้ */}
@@ -85,11 +83,11 @@ export default function Navbar() {
                                     <Menu className="w-6 h-6 text-white transition-transform duration-300" />
                                 )}
                             </button>
-                            <Link 
-                                href="/home" 
+                            <Link
+                                href="/home"
                                 className="text-xl font-bold text-white transition-all duration-300 hover:text-orange-400 transform hover:scale-105 hover:translate-x-1"
                             >
-                                EREWHON 
+                                EREWHON
                             </Link>
                         </div>
 
@@ -111,11 +109,10 @@ export default function Navbar() {
                             {/* ปุ่มโปรไฟล์ */}
                             <Link
                                 href="/profile"
-                                className={`p-2 transition-all duration-300 hover:scale-110 hover:bg-gray-800 rounded-full group ${
-                                    pathname === "/profile" 
-                                        ? "text-orange-400 bg-orange-500/20 ring-2 ring-orange-400/50" 
+                                className={`p-2 transition-all duration-300 hover:scale-110 hover:bg-gray-800 rounded-full group ${pathname === "/profile"
+                                        ? "text-orange-400 bg-orange-500/20 ring-2 ring-orange-400/50"
                                         : "text-white hover:text-orange-400"
-                                }`}
+                                    }`}
                                 aria-label="User profile"
                             >
                                 <User className="w-6 h-6 transition-transform duration-300 group-hover:rotate-12" />
@@ -125,7 +122,7 @@ export default function Navbar() {
 
                     {/* Backdrop overlay */}
                     {isMenuOpen && (
-                        <div 
+                        <div
                             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300 animate-pulse"
                             onClick={toggleMenu}
                         />
@@ -133,11 +130,10 @@ export default function Navbar() {
 
                     {/* Sidebar */}
                     <div
-                        className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-black via-gray-900 to-black text-white z-50 shadow-2xl py-8 px-4 transform transition-all duration-300 ease-out ${
-                            isMenuOpen 
-                                ? "translate-x-0 opacity-100" 
+                        className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-black via-gray-900 to-black text-white z-50 shadow-2xl py-8 px-4 transform transition-all duration-300 ease-out ${isMenuOpen
+                                ? "translate-x-0 opacity-100"
                                 : "-translate-x-full opacity-0"
-                        }`}
+                            }`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header ของ sidebar */}
@@ -161,12 +157,11 @@ export default function Navbar() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`py-3 px-4 hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 transition-all duration-300 rounded-lg transform hover:scale-105 hover:shadow-lg hover:translate-x-2 group ${
-                                        pathname === item.href 
-                                            ? "text-orange-400 font-medium bg-gradient-to-r from-orange-500/20 to-orange-600/20 border-l-4 border-orange-400 translate-x-2" 
+                                    className={`py-3 px-4 hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 transition-all duration-300 rounded-lg transform hover:scale-105 hover:shadow-lg hover:translate-x-2 group ${pathname === item.href
+                                            ? "text-orange-400 font-medium bg-gradient-to-r from-orange-500/20 to-orange-600/20 border-l-4 border-orange-400 translate-x-2"
                                             : "text-gray-300 hover:text-white"
-                                    } ${isMenuOpen ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}`}
-                                    style={{ 
+                                        } ${isMenuOpen ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}`}
+                                    style={{
                                         transitionDelay: `${150 + index * 50}ms`,
                                         animationDelay: `${150 + index * 50}ms`
                                     }}
@@ -182,7 +177,7 @@ export default function Navbar() {
 
                         {/* Footer ของ sidebar */}
                         <div className={`absolute bottom-6 left-4 right-4 text-center transition-all duration-700 ${isMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
-                             style={{ transitionDelay: '600ms' }}>
+                            style={{ transitionDelay: '600ms' }}>
                             <div className="border-t border-gray-700 pt-4">
                                 <p className="text-gray-400 text-sm hover:text-orange-400 transition-colors duration-300">© 2025 EREWHON SHOP</p>
                                 <p className="text-gray-500 text-xs mt-1 hover:text-gray-400 transition-colors duration-300">ขับเคลื่อนด้วยความรัก ❤️</p>
