@@ -4,11 +4,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X, User, ShoppingCart } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useLiff } from '@/app/contexts/LiffContext';
+import axios from 'axios';
 
 export default function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [cartCount, setCartCount] = useState(0);
+    const { dbUser } = useLiff();
     const pathname = usePathname();
+
+    console.log(dbUser?.id);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -21,12 +27,32 @@ export default function Navbar() {
         };
     }, []);
 
+    useEffect(() => {
+        const fetchCartCount = async () => {
+            if (!dbUser?.id) {
+                console.log('[Navbar] dbUser.id is missing:', dbUser);
+                setCartCount(0);
+                return;
+            }
+            try {
+                console.log('[Navbar] Fetching cart for userId:', dbUser.id);
+                const res = await axios.get(`/api/cart`, { params: { userId: dbUser.id } });
+                console.log('[Navbar] cart API response:', res.data);
+                setCartCount(res.data.items?.length || 0);
+            } catch (e) {
+                console.error('[Navbar] Error fetching cart:', e);
+                setCartCount(0);
+            }
+        };
+        fetchCartCount();
+    }, [dbUser]);
+
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
 
     const menuItems = [
-        { title: "Delivery | Pickup", href: "/delivery-pickup" },
+        { title: "Delivery | Pickup", href: "/home" },
         { title: "Ship Anywhere", href: "/shipping" },
         { title: "Catering", href: "/catering" },
         { title: "Membership", href: "/membership" },
@@ -78,7 +104,7 @@ export default function Navbar() {
                                 <ShoppingCart className="w-6 h-6 transition-transform duration-300 group-hover:rotate-12" />
                                 {/* Badge สำหรับจำนวนสินค้าในตะกร้า (optional) */}
                                 <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold transform transition-all duration-300 group-hover:scale-110">
-                                    0
+                                    {cartCount}
                                 </span>
                             </Link>
 

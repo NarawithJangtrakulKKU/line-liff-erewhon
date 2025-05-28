@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   TruckElectric,
-  X
+  X,
+  ChartPie
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -62,6 +63,11 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
   // รายการเมนู sidebar - สามารถเพิ่มได้ในอนาคต
   const sidebarItems: SidebarItem[] = [
     {
+      title: 'Analytics',
+      href: '/admin/analytics',
+      icon: <ChartPie className="h-5 w-5" />,
+    },
+    {
       title: 'Dashboard',
       href: '/admin/dashboard',
       icon: <BarChart3 className="h-5 w-5" />
@@ -85,16 +91,6 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
         title: 'Orders',
         href: '/admin/orders',
         icon: <Package className="h-5 w-5" />
-    },
-    {
-        title: 'Shipments',
-        href: '/admin/shipments',
-        icon: <TruckElectric className="h-5 w-5" />
-    },
-    {
-        title: 'Settings',
-        href: '/admin/settings',
-        icon: <Settings className="h-5 w-5" />
     },
   ];
 

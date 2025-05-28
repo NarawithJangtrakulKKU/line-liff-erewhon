@@ -4,41 +4,27 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Liff } from '@line/liff'
 import Image from 'next/image'
+import { useLiff } from '@/app/contexts/LiffContext'
 
 type Profile = NonNullable<Awaited<ReturnType<Liff['getProfile']>>>
 
 export default function Home() {
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { profile, isInitialized, isLoggedIn, login } = useLiff()
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const liffId = process.env.NEXT_PUBLIC_LIFF_ID
 
   useEffect(() => {
-    const initLiff = async () => {
-      try {
-        const liff = (await import('@line/liff')).default
-        await liff.init({ liffId: `${liffId}` })
-  
-        if (!liff.isLoggedIn()) {
-          setIsLoading(false)
-        } else {
-          const userProfile = await liff.getProfile()
-          setProfile(userProfile)
-          // Redirect to profile page when logged in
-          router.push('/home')
-        }
-      } catch (error) {
-        console.error('Failed to initialize LIFF', error)
-        setIsLoading(false)
+    if (isInitialized) {
+      if (isLoggedIn && profile) {
+        // รอให้ข้อมูลถูกบันทึกลง database แล้วค่อย redirect
+        router.push('/home')
       }
+      setIsLoading(false)
     }
-  
-    initLiff()
-  }, [router])
+  }, [isInitialized, isLoggedIn, profile, router])
 
-  const handleLogin = async () => {
-    const liff = (await import('@line/liff')).default
-    liff.login()
+  const handleLogin = () => {
+    login()
   }
 
   const handleServiceInfo = () => {
