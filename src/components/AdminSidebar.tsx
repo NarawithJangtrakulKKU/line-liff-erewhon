@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   TruckElectric,
-  X
+  X,
+  ChartPie
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -61,6 +62,11 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
   
   // รายการเมนู sidebar - สามารถเพิ่มได้ในอนาคต
   const sidebarItems: SidebarItem[] = [
+    {
+      title: 'Analytics',
+      href: '/admin/analytics',
+      icon: <ChartPie className="h-5 w-5" />,
+    },
     {
       title: 'Dashboard',
       href: '/admin/dashboard',
