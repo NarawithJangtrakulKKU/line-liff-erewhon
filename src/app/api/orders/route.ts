@@ -177,7 +177,11 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get('userId')
     const orderId = searchParams.get('orderId')
 
+    console.log('GET /api/orders called with:', { userId, orderId })
+
     if (orderId) {
+      console.log('Searching for order with ID:', orderId)
+      
       // Fetch specific order
       const order = await prisma.order.findUnique({
         where: { id: orderId },
@@ -199,17 +203,23 @@ export async function GET(req: NextRequest) {
         }
       })
 
+      console.log('Order found:', order ? 'Yes' : 'No')
+      
       if (!order) {
+        console.log('Order not found in database for ID:', orderId)
         return NextResponse.json(
-          { error: 'Order not found' },
+          { error: 'Order not found', orderId },
           { status: 404 }
         )
       }
 
+      console.log('Returning order data for ID:', orderId)
       return NextResponse.json({ success: true, order })
     }
 
     if (userId) {
+      console.log('Searching for orders for user ID:', userId)
+      
       // Fetch user orders
       const orders = await prisma.order.findMany({
         where: { userId },
@@ -228,9 +238,11 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' }
       })
 
+      console.log('Found orders for user:', orders.length)
       return NextResponse.json({ success: true, orders })
     }
 
+    console.log('Missing required parameter: userId or orderId')
     return NextResponse.json(
       { error: 'Missing required parameter: userId or orderId' },
       { status: 400 }
@@ -239,7 +251,8 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error fetching orders:', error)
     return NextResponse.json({ 
-      error: 'Internal server error' 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   } finally {
     await prisma.$disconnect()

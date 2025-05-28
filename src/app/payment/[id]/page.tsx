@@ -3,16 +3,18 @@ import Navbar from '@/components/Navbar'
 import PaymentPage from '@/components/PaymentPage'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function Page({ params }: PageProps) {
+  const { id } = await params
+  
   return (
     <div>
         <Navbar />
-        <PaymentPage orderId={params.id} />
+        <PaymentPage orderId={id} />
         <Footer />
     </div>
   )

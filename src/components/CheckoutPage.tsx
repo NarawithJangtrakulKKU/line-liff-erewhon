@@ -176,27 +176,27 @@ export default function CheckoutPage() {
       icon: <Smartphone className="h-5 w-5" />,
       fee: 0
     },
-    {
-      id: 'LINE_PAY',
-      name: 'LINE Pay',
-      description: 'ชำระผ่าน LINE Pay',
-      icon: <CreditCard className="h-5 w-5" />,
-      fee: 0
-    },
-    {
-      id: 'BANK_TRANSFER',
-      name: 'โอนเงินธนาคาร',
-      description: 'โอนเงินผ่านธนาคาร',
-      icon: <Building2 className="h-5 w-5" />,
-      fee: 0
-    },
-    {
-      id: 'COD',
-      name: 'เก็บเงินปลายทาง',
-      description: 'ชำระเงินเมื่อได้รับสินค้า',
-      icon: <Banknote className="h-5 w-5" />,
-      fee: 20
-    }
+    // {
+    //   id: 'LINE_PAY',
+    //   name: 'LINE Pay',
+    //   description: 'ชำระผ่าน LINE Pay',
+    //   icon: <CreditCard className="h-5 w-5" />,
+    //   fee: 0
+    // },
+    // {
+    //   id: 'BANK_TRANSFER',
+    //   name: 'โอนเงินธนาคาร',
+    //   description: 'โอนเงินผ่านธนาคาร',
+    //   icon: <Building2 className="h-5 w-5" />,
+    //   fee: 0
+    // },
+    // {
+    //   id: 'COD',
+    //   name: 'เก็บเงินปลายทาง',
+    //   description: 'ชำระเงินเมื่อได้รับสินค้า',
+    //   icon: <Banknote className="h-5 w-5" />,
+    //   fee: 20
+    // }
   ]
 
   // Redirect to login if not authenticated
