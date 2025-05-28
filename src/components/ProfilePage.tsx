@@ -66,7 +66,7 @@ export default function ProfilePage() {
       title: "คำสั่งซื้อของฉัน",
       description: "ติดตามสถานะการสั่งซื้อ",
       icon: ShoppingBag,
-      href: "/orders",
+      href: "/myorders",
       color: "from-blue-400 to-blue-500"
     },
     {
@@ -76,13 +76,13 @@ export default function ProfilePage() {
       href: "/purchase-history",
       color: "from-green-400 to-green-500"
     },
-    {
-      title: "การชำระเงิน",
-      description: "จัดการวิธีการชำระเงิน",
-      icon: CreditCard,
-      href: "/payment-methods",
-      color: "from-purple-400 to-purple-500"
-    },
+    // {
+    // //   title: "การชำระเงิน",
+    // //   description: "จัดการวิธีการชำระเงิน",
+    // //   icon: CreditCard,
+    // //   href: "/payment-methods",
+    // //   color: "from-purple-400 to-purple-500"
+    // // },
     {
       title: "ตั้งค่าบัญชี",
       description: "จัดการข้อมูลส่วนตัว",
