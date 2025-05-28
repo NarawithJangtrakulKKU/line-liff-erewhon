@@ -106,7 +106,7 @@ export default function AboutPage() {
                     className="w-full h-auto"
                 />
                 <Image
-                    src="/images/EREWHON_Storefronts_desktop_ec29b31483.png"
+                    src="/images/about/EREWHON_Storefronts_desktop_ec29b31483.png"
                     alt="About Background"
                     width={400}
                     height={300}
@@ -114,7 +114,7 @@ export default function AboutPage() {
                     className="w-full h-auto"
                 />
                 <Image
-                    src="/images/About_Us_Food_Desktop_d5e144c1e4.png"
+                    src="/images/about/About_Us_Food_Desktop_d5e144c1e4.png"
                     alt="About Background"
                     width={400}
                     height={300}
