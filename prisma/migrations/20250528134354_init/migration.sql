@@ -74,6 +74,7 @@ CREATE TABLE "products" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isFeatured" BOOLEAN NOT NULL DEFAULT false,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "image" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "categoryId" TEXT NOT NULL,
