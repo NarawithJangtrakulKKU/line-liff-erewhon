@@ -109,7 +109,7 @@ export default function ContactUsPage() {
                                     <div className="flex items-center space-x-4">
                                         <div className="w-16 h-16 bg-gray-600 rounded-lg overflow-hidden">
                                             <Image
-                                                src="/api/placeholder/64/64"
+                                                src="/images/about/EREWHON_Storefronts_desktop_ec29b31483.png"
                                                 alt="Grove store"
                                                 width={64}
                                                 height={64}
