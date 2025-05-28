@@ -52,7 +52,7 @@ export default function Navbar() {
     };
 
     const menuItems = [
-        { title: "Delivery | Pickup", href: "/delivery-pickup" },
+        { title: "Delivery | Pickup", href: "/home" },
         { title: "Ship Anywhere", href: "/shipping" },
         { title: "Catering", href: "/catering" },
         { title: "Membership", href: "/membership" },
