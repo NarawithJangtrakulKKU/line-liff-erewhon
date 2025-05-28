@@ -25,15 +25,69 @@ import { Separator } from '@/components/ui/separator'
 // Temporarily comment out confetti until package is installed
 // import confetti from 'canvas-confetti'
 
+// Interfaces for order data
+interface OrderItem {
+  id: string
+  productId: string
+  quantity: number
+  price: number
+  total: number
+  product: {
+    id: string
+    name: string
+    description?: string
+    images: Array<{
+      id: string
+      imageUrl: string
+      altText?: string
+    }>
+  }
+}
+
+interface Address {
+  id: string
+  name: string
+  phone: string
+  address: string
+  district: string
+  subDistrict: string
+  province: string
+  postalCode: string
+}
+
+interface Order {
+  id: string
+  orderNumber: string
+  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
+  paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+  paymentMethod?: 'CREDIT_CARD' | 'PROMPTPAY' | 'BANK_TRANSFER' | 'COD' | 'LINE_PAY'
+  shippingMethod?: 'TH_POST' | 'TH_EXPRESS'
+  subtotal: number
+  shippingFee: number
+  tax: number
+  discount: number
+  total: number
+  notes?: string
+  trackingNumber?: string
+  shippedAt?: string
+  deliveredAt?: string
+  createdAt: string
+  updatedAt: string
+  address: Address
+  orderItems: OrderItem[]
+}
+
 export default function PaymentSuccess() {
   const { profile, isInitialized, isLoggedIn } = useLiff()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showAnimation, setShowAnimation] = useState(false)
+  const [order, setOrder] = useState<Order | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   
-  // Get order details from URL params (optional)
-  const orderNumber = searchParams.get('orderNumber') || 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase()
-  const amount = searchParams.get('amount') || '1,299'
+  // Get order ID from URL params
+  const orderId = searchParams.get('orderId')
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -42,9 +96,68 @@ export default function PaymentSuccess() {
     }
   }, [isInitialized, isLoggedIn, router])
 
+  // Fetch order data
+  useEffect(() => {
+    const fetchOrder = async () => {
+      if (!orderId) {
+        setError('ไม่พบเลขที่คำสั่งซื้อ')
+        setLoading(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/orders?orderId=${orderId}`)
+        const data = await response.json()
+
+        if (data.success && data.order) {
+          setOrder(data.order)
+          // Update payment status to PAID if it's still PENDING
+          if (data.order.paymentStatus === 'PENDING') {
+            await updatePaymentStatus(orderId)
+          }
+        } else {
+          setError(data.error || 'ไม่พบข้อมูลคำสั่งซื้อ')
+        }
+      } catch (error) {
+        console.error('Error fetching order:', error)
+        setError('เกิดข้อผิดพลาดในการดึงข้อมูลคำสั่งซื้อ')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (isInitialized && isLoggedIn && orderId) {
+      fetchOrder()
+    }
+  }, [isInitialized, isLoggedIn, orderId])
+
+  // Update payment status to PAID
+  const updatePaymentStatus = async (orderId: string) => {
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentStatus: 'PAID'
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.order) {
+          setOrder(data.order)
+        }
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error)
+    }
+  }
+
   // Show confetti animation on mount
   useEffect(() => {
-    if (isInitialized && isLoggedIn) {
+    if (isInitialized && isLoggedIn && order) {
       setShowAnimation(true)
       
       // Temporarily comment out confetti until package is installed
@@ -59,22 +172,22 @@ export default function PaymentSuccess() {
 
       // return () => clearTimeout(timer)
     }
-  }, [isInitialized, isLoggedIn])
+  }, [isInitialized, isLoggedIn, order])
 
   const handleGoHome = () => {
     router.push('/home')
   }
 
   const handleViewOrders = () => {
-    router.push('/purchase-history')
+    router.push('/myorders')
   }
 
   const handleShareSuccess = async () => {
-    if (navigator.share) {
+    if (navigator.share && order) {
       try {
         await navigator.share({
           title: 'สั่งซื้อสำเร็จ - EREWHON SHOP',
-          text: `ฉันเพิ่งสั่งซื้อสินค้าจาก EREWHON SHOP เรียบร้อยแล้ว! 🛍️`,
+          text: `ฉันเพิ่งสั่งซื้อสินค้าจาก EREWHON SHOP เรียบร้อยแล้ว! คำสั่งซื้อ: ${order.orderNumber} 🛍️`,
           url: window.location.origin
         })
       } catch (error) {
@@ -88,7 +201,33 @@ export default function PaymentSuccess() {
     window.open('tel:02-123-4567')
   }
 
-  if (!isInitialized) {
+  // Format payment method display
+  const getPaymentMethodDisplay = (method?: string) => {
+    const methods = {
+      'CREDIT_CARD': 'บัตรเครดิต',
+      'PROMPTPAY': 'พร้อมเพย์',
+      'BANK_TRANSFER': 'โอนเงิน',
+      'COD': 'เก็บเงินปลายทาง',
+      'LINE_PAY': 'LINE Pay'
+    }
+    return methods[method as keyof typeof methods] || method || 'ไม่ระบุ'
+  }
+
+  // Format shipping method display
+  const getShippingMethodDisplay = (method?: string) => {
+    const methods = {
+      'TH_POST': 'พัสดุธรรมดา',
+      'TH_EXPRESS': 'พัสดุด่วน'
+    }
+    return methods[method as keyof typeof methods] || method || 'ไม่ระบุ'
+  }
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('th-TH').format(amount)
+  }
+
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 pt-20 flex items-center justify-center">
         <div className="animate-pulse space-y-6 text-center">
@@ -96,6 +235,25 @@ export default function PaymentSuccess() {
           <div className="h-8 w-48 bg-gray-200 rounded-md mx-auto"></div>
           <div className="h-4 w-64 bg-gray-200 rounded-md mx-auto"></div>
         </div>
+      </div>
+    )
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 pt-20 flex items-center justify-center">
+        <Card className="max-w-md mx-auto shadow-lg">
+          <CardContent className="pt-6 text-center">
+            <div className="h-16 w-16 text-red-500 mx-auto mb-4 flex items-center justify-center">
+              <Package className="h-16 w-16" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">เกิดข้อผิดพลาด</h1>
+            <p className="text-gray-600 mb-6">{error || 'ไม่พบข้อมูลคำสั่งซื้อ'}</p>
+            <Button onClick={() => router.push('/home')} className="bg-orange-500 hover:bg-orange-600">
+              กลับหน้าหลัก
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -157,11 +315,11 @@ export default function PaymentSuccess() {
               </p>
               
               {/* Order Number */}
-              {/* <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 mt-4">
+              <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 mt-4">
                 <span className="text-sm font-medium">
-                  เลขที่คำสั่งซื้อ: <span className="font-bold">{orderNumber}</span>
+                  เลขที่คำสั่งซื้อ: <span className="font-bold">{order.orderNumber}</span>
                 </span>
-              </div> */}
+              </div>
             </div>
 
             {/* Decorative Elements */}
@@ -199,7 +357,7 @@ export default function PaymentSuccess() {
 
             {/* Order Summary */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* <div className="space-y-4">
+              <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Package className="h-5 w-5 text-green-600" />
                   สรุปคำสั่งซื้อ
@@ -207,11 +365,30 @@ export default function PaymentSuccess() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">เลขที่คำสั่งซื้อ:</span>
-                    <span className="font-medium">{orderNumber}</span>
+                    <span className="font-medium">{order.orderNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">ยอดรวม:</span>
-                    <span className="text-lg font-bold text-green-600">฿{amount}</span>
+                    <span className="text-gray-600">ยอดรวมสินค้า:</span>
+                    <span className="font-medium">฿{formatCurrency(order.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ค่าจัดส่ง:</span>
+                    <span className="font-medium">฿{formatCurrency(order.shippingFee)}</span>
+                  </div>
+                  {order.discount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">ส่วนลด:</span>
+                      <span className="font-medium text-green-600">-฿{formatCurrency(order.discount)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ยอดรวมทั้งหมด:</span>
+                    <span className="text-lg font-bold text-green-600">฿{formatCurrency(order.total)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">วิธีชำระเงิน:</span>
+                    <span className="font-medium">{getPaymentMethodDisplay(order.paymentMethod)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">สถานะ:</span>
@@ -221,7 +398,7 @@ export default function PaymentSuccess() {
                     </Badge>
                   </div>
                 </div>
-              </div> */}
+              </div>
 
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -255,9 +432,51 @@ export default function PaymentSuccess() {
                     </div>
                     <div className="text-sm">
                       <div className="font-medium text-gray-900">จัดส่งสินค้า</div>
-                      <div className="text-gray-600">ใน 3-5 วันทำการ</div>
+                      <div className="text-gray-600">ใน 3-5 วันทำการ ({getShippingMethodDisplay(order.shippingMethod)})</div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-blue-600" />
+                รายการสินค้า ({order.orderItems.length} รายการ)
+              </h3>
+              <div className="space-y-3">
+                {order.orderItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                    <img
+                      src={item.product.images[0]?.imageUrl || '/api/placeholder/60/60'}
+                      alt={item.product.name}
+                      className="w-15 h-15 object-cover rounded-md"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{item.product.name}</div>
+                      <div className="text-sm text-gray-600">จำนวน: {item.quantity} ชิ้น</div>
+                      <div className="text-sm text-gray-600">ราคา: ฿{formatCurrency(item.price)} ต่อชิ้น</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900">฿{formatCurrency(item.total)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Shipping Address */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Truck className="h-5 w-5 text-purple-600" />
+                ที่อยู่จัดส่ง
+              </h3>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="font-medium text-gray-900">{order.address.name}</div>
+                <div className="text-sm text-gray-600">{order.address.phone}</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {order.address.address} {order.address.district} {order.address.subDistrict} {order.address.province} {order.address.postalCode}
                 </div>
               </div>
             </div>
@@ -326,7 +545,9 @@ export default function PaymentSuccess() {
                 <Clock className="h-5 w-5 text-orange-600" />
                 <div>
                   <div className="font-medium text-gray-900">เวลาจัดส่งโดยประมาณ</div>
-                  <div className="text-sm text-gray-600">3-5 วันทำการ</div>
+                  <div className="text-sm text-gray-600">
+                    {order.shippingMethod === 'TH_EXPRESS' ? '1-2 วันทำการ' : '3-5 วันทำการ'}
+                  </div>
                 </div>
               </div>
               
