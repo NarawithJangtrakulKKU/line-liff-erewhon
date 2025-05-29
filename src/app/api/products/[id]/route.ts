@@ -41,7 +41,13 @@ export async function GET(
           include: {
             user: {
               select: {
-                displayName: true
+                displayName: true,
+                pictureUrl: true
+              }
+            },
+            mediaFiles: {
+              orderBy: {
+                sortOrder: 'asc'
               }
             }
           },
@@ -92,9 +98,20 @@ export async function GET(
         rating: review.rating,
         comment: review.comment,
         createdAt: review.createdAt,
+        isVerified: review.isVerified,
         user: {
-          displayName: review.user.displayName
-        }
+          displayName: review.user.displayName,
+          pictureUrl: review.user.pictureUrl
+        },
+        mediaFiles: review.mediaFiles.map(media => ({
+          id: media.id,
+          mediaType: media.mediaType,
+          mediaUrl: media.mediaUrl,
+          thumbnailUrl: media.thumbnailUrl,
+          fileName: media.fileName,
+          altText: media.altText,
+          sortOrder: media.sortOrder
+        }))
       })),
       averageRating: averageRating,
       reviewCount: product._count.reviews,

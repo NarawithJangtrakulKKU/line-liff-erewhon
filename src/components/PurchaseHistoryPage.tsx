@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import axios from 'axios'
 import { 
   ShoppingBag, 
   ChevronRight, 
@@ -14,7 +15,13 @@ import {
   RotateCcw,
   Eye,
   Star,
-  MessageSquare
+  MessageSquare,
+  Upload,
+  Camera,
+  X,
+  FileImage,
+  Video,
+  Download
 } from 'lucide-react'
 import { useLiff } from '@/app/contexts/LiffContext'
 import {
@@ -71,6 +78,16 @@ interface Order {
     postalCode: string
   }
   orderItems: OrderItem[]
+}
+
+// เพิ่ม interface สำหรับข้อมูลการรีวิว
+interface ReviewStatus {
+  productId: string
+  orderId: string
+  hasReviewed: boolean
+  reviewId?: string
+  rating?: number
+  reviewDate?: string
 }
 
 const statusConfig = {
@@ -133,9 +150,38 @@ const paymentMethodConfig = {
   LINE_PAY: 'LINE Pay'
 }
 
+// Utility function สำหรับ format ขนาดไฟล์
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// ฟังก์ชันสำหรับแปลงค่า Decimal เป็น number อย่างปลอดภัย
+const safeNumber = (value: any): number => {
+  if (value === null || value === undefined) return 0
+  if (typeof value === 'number') return isNaN(value) ? 0 : value
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
+// ฟังก์ชันสำหรับตรวจสอบประเภทไฟล์
+const getFileTypeInfo = (file: File) => {
+  const isImage = file.type.startsWith('image/')
+  const isVideo = file.type.startsWith('video/')
+  const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+  return { isImage, isVideo, maxSize }
+}
+
 export default function PurchaseHistoryPage() {
   const { isInitialized, isLoggedIn, dbUser } = useLiff()
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -146,6 +192,21 @@ export default function PurchaseHistoryPage() {
   const [reviewComment, setReviewComment] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  
+  // New states for media upload
+  const [reviewMedia, setReviewMedia] = useState<File[]>([])
+  const [mediaPreview, setMediaPreview] = useState<string[]>([])
+  const [uploadingMedia, setUploadingMedia] = useState(false)
+  const [showMediaPreview, setShowMediaPreview] = useState(false)
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0)
+  
+  // เพิ่ม states สำหรับ upload progress
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState<string>('')
+
+  // เพิ่ม state สำหรับเก็บสถานะการรีวิว
+  const [reviewStatuses, setReviewStatuses] = useState<ReviewStatus[]>([])
+  const [loadingReviewStatuses, setLoadingReviewStatuses] = useState(false)
 
   useEffect(() => {
     if (isInitialized && !isLoggedIn) {
@@ -160,14 +221,23 @@ export default function PurchaseHistoryPage() {
 
       try {
         setLoading(true)
-        const response = await fetch(`/api/orders?userId=${dbUser.id}`)
+        const response = await axios.get(`/api/orders?userId=${dbUser.id}`)
+        console.log('API Response:', response.data)
+        console.log('Orders raw data:', response.data.orders)
         
-        if (response.ok) {
-          const data = await response.json()
-          setOrders(data.orders || [])
-        } else {
-          console.error('Failed to fetch orders')
+        // ตรวจสอบข้อมูลแต่ละออเดอร์
+        if (response.data.orders) {
+          response.data.orders.forEach((order: any, index: number) => {
+            console.log(`Order ${index + 1}:`, {
+              id: order.id,
+              total: order.total,
+              totalType: typeof order.total,
+              isNaN: isNaN(order.total)
+            })
+          })
         }
+        
+        setOrders(response.data.orders || [])
       } catch (error) {
         console.error('Error fetching orders:', error)
       } finally {
@@ -180,17 +250,149 @@ export default function PurchaseHistoryPage() {
     }
   }, [dbUser])
 
+  // เพิ่มฟังก์ชันสำหรับโหลดสถานะการรีวิว
+  const fetchReviewStatuses = async () => {
+    if (!dbUser || orders.length === 0) return
+
+    try {
+      setLoadingReviewStatuses(true)
+      
+      // รวบรวม productId และ orderId ทั้งหมดจากคำสั่งซื้อที่สถานะเป็น DELIVERED
+      const deliveredOrders = orders.filter(order => order.status === 'DELIVERED')
+      const reviewChecks = deliveredOrders.flatMap(order => 
+        order.orderItems.map(item => ({
+          productId: item.product.id,
+          orderId: order.id
+        }))
+      )
+
+      if (reviewChecks.length === 0) {
+        setReviewStatuses([])
+        return
+      }
+
+      const response = await axios.post('/api/reviews/status', {
+        userId: dbUser.id,
+        checks: reviewChecks
+      })
+
+      setReviewStatuses(response.data.reviewStatuses || [])
+    } catch (error) {
+      console.error('Error fetching review statuses:', error)
+      // Don't show error to user, just log it - fallback to showing review buttons
+      setReviewStatuses([])
+    } finally {
+      setLoadingReviewStatuses(false)
+    }
+  }
+
+  // โหลดสถานะการรีวิวเมื่อมีข้อมูลคำสั่งซื้อ
+  useEffect(() => {
+    if (orders.length > 0) {
+      fetchReviewStatuses()
+    }
+  }, [orders, dbUser])
+
+  // ฟังก์ชันเพื่อเช็คว่าสินค้าถูกรีวิวแล้วหรือยัง
+  const getReviewStatus = (productId: string, orderId: string): ReviewStatus | null => {
+    return reviewStatuses.find(
+      status => status.productId === productId && status.orderId === orderId
+    ) || null
+  }
+
   const handleViewOrderDetail = (order: Order) => {
     setSelectedOrder(order)
     setShowOrderDetail(true)
   }
 
   const handleReviewProduct = (orderItem: OrderItem, orderId: string) => {
+    // เช็คว่าสินค้านี้ถูกรีวิวแล้วหรือยัง
+    const reviewStatus = getReviewStatus(orderItem.product.id, orderId)
+    
+    if (reviewStatus?.hasReviewed) {
+      // แสดงข้อความที่เป็นมิตรกับผู้ใช้มากขึ้น
+      alert(`คุณได้รีวิวสินค้า "${orderItem.product.name}" แล้ว\nให้คะแนน ${reviewStatus.rating} ดาว`)
+      return
+    }
+
+    // ตรวจสอบว่าคำสั่งซื้อเป็น DELIVERED หรือไม่
+    const order = orders.find(o => o.id === orderId)
+    if (!order || order.status !== 'DELIVERED') {
+      alert('คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
+      return
+    }
+
     setSelectedProduct({ ...orderItem, orderId })
     setReviewRating(0)
     setReviewComment('')
+    // Reset media states
+    setReviewMedia([])
+    setMediaPreview([])
     setShowReviewModal(true)
     setShowOrderDetail(false)
+  }
+
+  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    // Validate files
+    for (let file of Array.from(files)) {
+      const { isImage, isVideo, maxSize } = getFileTypeInfo(file)
+      
+      if (!isImage && !isVideo) {
+        alert('กรุณาเลือกไฟล์รูปภาพหรือวิดีโอเท่านั้น')
+        return
+      }
+      
+      // Check file size (max 50MB for videos, 10MB for images)
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      const maxSizeMB = isVideo ? '50MB' : '10MB'
+      
+      if (file.size > maxSize) {
+        alert(`ขนาดไฟล์ ${file.name} (${fileSizeMB}MB) เกินกำหนด\nไฟล์${isVideo ? 'วิดีโอ' : 'รูปภาพ'}ต้องไม่เกิน ${maxSizeMB}`)
+        return
+      }
+      
+      // Warning for large video files
+      if (isVideo && file.size > 20 * 1024 * 1024) {
+        const proceed = confirm(
+          `ไฟล์วิดีโอ "${file.name}" มีขนาด ${fileSizeMB}MB\n` +
+          'การอัปโหลดอาจใช้เวลานาน คุณต้องการดำเนินการต่อหรือไม่?'
+        )
+        if (!proceed) return
+      }
+    }
+
+    // Check total files limit (max 5 files)
+    if (reviewMedia.length + files.length > 5) {
+      alert('สามารถอัปโหลดได้สูงสุด 5 ไฟล์')
+      return
+    }
+
+    const newFiles = Array.from(files)
+    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file))
+    
+    setReviewMedia(prev => [...prev, ...newFiles])
+    setMediaPreview(prev => [...prev, ...newPreviewUrls])
+  }
+
+  const handleCameraCapture = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute('capture', 'environment')
+      fileInputRef.current.setAttribute('accept', 'image/*,video/*')
+      fileInputRef.current.click()
+    }
+  }
+
+  const removeMedia = (index: number) => {
+    // Revoke object URL to free memory
+    if (mediaPreview[index].startsWith('blob:')) {
+      URL.revokeObjectURL(mediaPreview[index])
+    }
+    
+    setReviewMedia(prev => prev.filter((_, i) => i !== index))
+    setMediaPreview(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmitReview = async () => {
@@ -204,48 +406,98 @@ export default function PurchaseHistoryPage() {
       productId: selectedProduct.product.id,
       orderId: selectedProduct.orderId,
       rating: reviewRating,
-      comment: reviewComment.trim() || null
+      comment: reviewComment.trim() || null,
+      mediaCount: reviewMedia.length
     })
 
     try {
       setSubmittingReview(true)
+      setUploadProgress(0)
+      setUploadStatus('กำลังเตรียมข้อมูล...')
       
-      const response = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: dbUser.id,
-          productId: selectedProduct.product.id,
-          orderId: selectedProduct.orderId,
-          rating: reviewRating,
-          comment: reviewComment.trim() || null
+      // Create FormData for file upload
+      const formData = new FormData()
+      formData.append('userId', dbUser.id)
+      formData.append('productId', selectedProduct.product.id)
+      formData.append('orderId', selectedProduct.orderId || '')
+      formData.append('rating', reviewRating.toString())
+      formData.append('comment', reviewComment.trim() || '')
+      
+      // Add media files with progress tracking
+      if (reviewMedia.length > 0) {
+        setUploadStatus(`กำลังเตรียมไฟล์ ${reviewMedia.length} ไฟล์...`)
+        reviewMedia.forEach((file, index) => {
+          formData.append(`media-${index}`, file)
         })
+        setUploadProgress(20)
+      }
+
+      setUploadStatus('กำลังอัปโหลด...')
+      setUploadProgress(30)
+
+      const response = await axios.post('/api/reviews', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 120000, // 2 minutes timeout
       })
 
-      const result = await response.json()
-      console.log('API response:', { status: response.status, result })
+      setUploadProgress(80)
+      setUploadStatus('กำลังประมวลผล...')
 
-      if (response.ok) {
-        setShowReviewModal(false)
-        setSelectedProduct(null)
-        setReviewRating(0)
-        setReviewComment('')
-        setShowSuccessModal(true)
-      } else {
-        // Handle specific error cases
-        if (response.status === 403) {
-          alert(result.message || 'คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
-        } else {
-          alert(result.message || 'เกิดข้อผิดพลาดในการส่งรีวิว')
+      console.log('API response:', { status: response.status, data: response.data })
+
+      setUploadProgress(100)
+      setUploadStatus('เสร็จสิ้น!')
+
+      setShowReviewModal(false)
+      setSelectedProduct(null)
+      setReviewRating(0)
+      setReviewComment('')
+      // Clean up media
+      mediaPreview.forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url)
         }
-      }
+      })
+      setReviewMedia([])
+      setMediaPreview([])
+      setShowSuccessModal(true)
+      
+      // อัปเดตสถานะการรีวิวหลังจากส่งรีวิวสำเร็จ
+      fetchReviewStatuses()
     } catch (error) {
       console.error('Error submitting review:', error)
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+      
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง หรือลดขนาดไฟล์')
+        } else if (error.response) {
+          // Handle specific error status codes
+          const status = error.response.status
+          const message = error.response.data?.message
+          
+          if (status === 403) {
+            alert(message || 'คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
+          } else if (status === 413) {
+            alert('ไฟล์มีขนาดใหญ่เกินไป กรุณาลดขนาดไฟล์หรือเลือกไฟล์อื่น')
+          } else if (status === 408 || status === 504) {
+            alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง')
+          } else {
+            alert(message || 'เกิดข้อผิดพลาดในการส่งรีวิว')
+          }
+        } else if (error.request) {
+          alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')
+        } else {
+          alert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+        }
+      } else {
+        alert('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง')
+      }
     } finally {
       setSubmittingReview(false)
+      setUploadProgress(0)
+      setUploadStatus('')
     }
   }
 
@@ -253,11 +505,14 @@ export default function PurchaseHistoryPage() {
     return product.images?.[0]?.imageUrl || product.image || undefined
   }
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | string | null | undefined) => {
+    // ใช้ safeNumber เพื่อแปลงค่าให้ปลอดภัย
+    const numPrice = safeNumber(price)
+    
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
       currency: 'THB'
-    }).format(price)
+    }).format(numPrice)
   }
 
   const formatDate = (dateString: string) => {
@@ -270,11 +525,14 @@ export default function PurchaseHistoryPage() {
     })
   }
 
-  const StarRating = ({ rating, onRatingChange, readonly = false }: { 
+  const StarRating = ({ rating, onRatingChange, readonly = false, size = 'default' }: { 
     rating: number, 
     onRatingChange?: (rating: number) => void,
-    readonly?: boolean 
+    readonly?: boolean,
+    size?: 'small' | 'default'
   }) => {
+    const starSize = size === 'small' ? 'h-4 w-4' : 'h-6 w-6'
+    
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -286,7 +544,7 @@ export default function PurchaseHistoryPage() {
             className={`${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform`}
           >
             <Star
-              className={`h-6 w-6 ${
+              className={`${starSize} ${
                 star <= rating
                   ? 'fill-yellow-400 text-yellow-400'
                   : 'text-gray-300'
@@ -371,7 +629,7 @@ export default function PurchaseHistoryPage() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">ยอดรวม</p>
                     <p className="text-2xl font-bold text-orange-600">
-                      {formatPrice(orders.reduce((sum, order) => sum + order.total, 0))}
+                      {formatPrice(orders.reduce((sum, order) => sum + safeNumber(order.total), 0))}
                     </p>
                   </div>
                   <Package className="h-8 w-8 text-orange-400" />
@@ -447,7 +705,7 @@ export default function PurchaseHistoryPage() {
                         <div>
                           <p className="text-xs text-gray-500 mb-1">จำนวนสินค้า</p>
                           <p className="text-sm font-medium">
-                            {order.orderItems.reduce((sum, item) => sum + item.quantity, 0)} ชิ้น
+                            {order.orderItems.reduce((sum, item) => sum + safeNumber(item.quantity), 0)} ชิ้น
                           </p>
                         </div>
                         <div>
@@ -663,29 +921,74 @@ export default function PurchaseHistoryPage() {
                       <div className="space-y-2 w-full">
                         <h4 className="font-medium text-gray-900">รีวิวสินค้า</h4>
                         <div className="grid gap-2">
-                          {selectedOrder.orderItems.map((item) => (
-                            <Button
-                              key={item.id}
-                              variant="outline"
-                              className="flex items-center justify-between p-3 h-auto"
-                              onClick={() => handleReviewProduct(item, selectedOrder.id)}
-                            >
-                              <div className="flex items-center gap-3">
-                                {getProductImageUrl(item.product) && (
-                                  <img
-                                    src={getProductImageUrl(item.product)}
-                                    alt={item.product.name}
-                                    className="w-8 h-8 rounded object-cover"
-                                  />
-                                )}
-                                <span className="text-left">{item.product.name}</span>
+                          {selectedOrder.orderItems.map((item) => {
+                            const reviewStatus = getReviewStatus(item.product.id, selectedOrder.id)
+                            const hasReviewed = reviewStatus?.hasReviewed || false
+                            
+                            return (
+                              <div
+                                key={item.id}
+                                className={`flex items-center justify-between p-3 rounded-lg border ${
+                                  hasReviewed 
+                                    ? 'bg-green-50 border-green-200' 
+                                    : 'bg-white border-gray-200 hover:border-orange-300 cursor-pointer'
+                                }`}
+                                onClick={hasReviewed ? undefined : () => handleReviewProduct(item, selectedOrder.id)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  {getProductImageUrl(item.product) && (
+                                    <img
+                                      src={getProductImageUrl(item.product)}
+                                      alt={item.product.name}
+                                      className="w-8 h-8 rounded object-cover"
+                                    />
+                                  )}
+                                  <span className="text-left">{item.product.name}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {hasReviewed ? (
+                                    <>
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      <div className="text-right">
+                                        <div className="flex items-center gap-1">
+                                          <StarRating 
+                                            rating={reviewStatus?.rating || 0} 
+                                            readonly={true}
+                                            size="small"
+                                          />
+                                        </div>
+                                        <span className="text-sm text-green-700 font-medium">
+                                          คุณรีวิวแล้ว
+                                        </span>
+                                        {reviewStatus?.reviewDate && (
+                                          <div className="text-xs text-green-600 mt-1">
+                                            {new Date(reviewStatus.reviewDate).toLocaleDateString('th-TH', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              year: 'numeric'
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </>
+                                  ) : loadingReviewStatuses ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400"></div>
+                                      <span className="text-sm text-gray-500">กำลังตรวจสอบ...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Star className="h-4 w-4 text-orange-500" />
+                                      <span className="text-sm text-orange-600 font-medium">
+                                        รีวิว
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Star className="h-4 w-4" />
-                                <span className="text-sm">รีวิว</span>
-                              </div>
-                            </Button>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -709,7 +1012,7 @@ export default function PurchaseHistoryPage() {
 
           {/* Review Modal */}
           <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Star className="h-5 w-5" />
@@ -776,11 +1079,159 @@ export default function PurchaseHistoryPage() {
                     </p>
                   </div>
 
+                  {/* Media Upload Section */}
+                  <div className="space-y-4">
+                    <Label className="text-base font-medium">รูปภาพและวิดีโอ (ไม่บังคับ)</Label>
+                    
+                    {/* Media Preview Grid */}
+                    {mediaPreview.length > 0 && (
+                      <div className="grid grid-cols-3 gap-3">
+                        {mediaPreview.map((preview, index) => {
+                          const file = reviewMedia[index]
+                          const { isImage, isVideo } = getFileTypeInfo(file)
+                          
+                          return (
+                            <div key={index} className="relative group">
+                              {isVideo ? (
+                                <div className="relative">
+                                  <video
+                                    src={preview}
+                                    className="w-full h-24 object-cover rounded-lg border"
+                                    muted
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                                    <Video className="h-6 w-6 text-white" />
+                                  </div>
+                                </div>
+                              ) : (
+                                <img
+                                  src={preview}
+                                  alt={`Review image ${index + 1}`}
+                                  className="w-full h-24 object-cover rounded-lg border"
+                                />
+                              )}
+                              
+                              {/* Action buttons */}
+                              <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 bg-white/90 hover:bg-white"
+                                  onClick={() => {
+                                    setSelectedMediaIndex(index)
+                                    setShowMediaPreview(true)
+                                  }}
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => removeMedia(index)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              
+                              {/* File type indicator */}
+                              <div className="absolute bottom-1 left-1">
+                                <Badge variant="secondary" className="text-xs px-1 py-0">
+                                  {isVideo ? 'วิดีโอ' : 'รูปภาพ'}
+                                </Badge>
+                              </div>
+                              
+                              {/* File size indicator */}
+                              <div className="absolute bottom-1 right-1">
+                                <Badge variant="secondary" className="text-xs px-1 py-0 bg-black/50 text-white">
+                                  {formatFileSize(file.size)}
+                                </Badge>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Upload Area */}
+                    {mediaPreview.length < 5 && (
+                      <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors">
+                        <div className="space-y-3">
+                          <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Upload className="h-6 w-6 text-gray-400" />
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium text-gray-900">อัปโหลดรูปภาพหรือวิดีโอ</h4>
+                            <p className="text-sm text-gray-500 mt-1">
+                              รองรับ: JPG, PNG, GIF, MP4, MOV (รูปภาพ ≤10MB, วิดีโอ ≤50MB)
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              สูงสุด 5 ไฟล์ (เหลือ {5 - mediaPreview.length} ไฟล์)
+                            </p>
+                            {reviewMedia.some(file => getFileTypeInfo(file).isVideo) && (
+                              <p className="text-xs text-amber-600 mt-1 font-medium">
+                                ⚠️ วิดีโอขนาดใหญ่อาจใช้เวลาอัปโหลดนาน
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploadingMedia}
+                              className="flex items-center gap-2"
+                            >
+                              <FileImage className="h-4 w-4" />
+                              เลือกไฟล์
+                            </Button>
+                            
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCameraCapture}
+                              disabled={uploadingMedia}
+                              className="flex items-center gap-2"
+                            >
+                              <Camera className="h-4 w-4" />
+                              ถ่ายรูป/วิดีโอ
+                            </Button>
+                          </div>
+
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*,video/*"
+                            multiple
+                            onChange={handleMediaUpload}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-4">
                     <Button
                       variant="outline"
-                      onClick={() => setShowReviewModal(false)}
+                      onClick={() => {
+                        setShowReviewModal(false)
+                        // Clean up media on cancel
+                        mediaPreview.forEach(url => {
+                          if (url.startsWith('blob:')) {
+                            URL.revokeObjectURL(url)
+                          }
+                        })
+                        setReviewMedia([])
+                        setMediaPreview([])
+                      }}
                       className="flex-1"
                       disabled={submittingReview}
                     >
@@ -799,6 +1250,109 @@ export default function PurchaseHistoryPage() {
                       ) : (
                         'ส่งรีวิว'
                       )}
+                    </Button>
+                  </div>
+
+                  {/* Upload Progress */}
+                  {submittingReview && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">{uploadStatus}</span>
+                        <span className="text-gray-600">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-orange-500 h-2 rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      {uploadProgress < 100 && (
+                        <p className="text-xs text-gray-500 text-center">
+                          {reviewMedia.some(file => file.type.startsWith('video/')) 
+                            ? 'การอัปโหลดวิดีโออาจใช้เวลาสักครู่ กรุณารอสักครู่...' 
+                            : 'กำลังประมวลผล...'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Media Preview Modal */}
+          <Dialog open={showMediaPreview} onOpenChange={setShowMediaPreview}>
+            <DialogContent className="sm:max-w-4xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileImage className="h-5 w-5" />
+                  ดูตัวอย่างไฟล์
+                </DialogTitle>
+                <DialogDescription>
+                  ไฟล์ที่ {selectedMediaIndex + 1} จาก {mediaPreview.length}
+                </DialogDescription>
+              </DialogHeader>
+              
+              {mediaPreview[selectedMediaIndex] && (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    {reviewMedia[selectedMediaIndex]?.type.startsWith('video/') ? (
+                      <video
+                        src={mediaPreview[selectedMediaIndex]}
+                        controls
+                        className="w-full max-h-96 rounded-lg"
+                      />
+                    ) : (
+                      <img
+                        src={mediaPreview[selectedMediaIndex]}
+                        alt={`Preview ${selectedMediaIndex + 1}`}
+                        className="w-full max-h-96 object-contain rounded-lg"
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Navigation */}
+                  {mediaPreview.length > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedMediaIndex(prev => prev > 0 ? prev - 1 : mediaPreview.length - 1)}
+                      >
+                        ก่อนหน้า
+                      </Button>
+                      <span className="text-sm text-gray-500">
+                        {selectedMediaIndex + 1} / {mediaPreview.length}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedMediaIndex(prev => prev < mediaPreview.length - 1 ? prev + 1 : 0)}
+                      >
+                        ถัดไป
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const link = document.createElement('a')
+                        link.href = mediaPreview[selectedMediaIndex]
+                        link.download = `review-media-${selectedMediaIndex + 1}.${reviewMedia[selectedMediaIndex]?.type.startsWith('video/') ? 'mp4' : 'jpg'}`
+                        link.click()
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      ดาวน์โหลด
+                    </Button>
+                    <Button 
+                      onClick={() => setShowMediaPreview(false)}
+                      className="bg-orange-500 hover:bg-orange-600"
+                    >
+                      ปิด
                     </Button>
                   </div>
                 </div>
