@@ -24,18 +24,9 @@ export default function Footer() {
                                     <span className="transform group-hover:translate-x-1 transition-transform duration-300">Delivery | Pickup</span>
                                 </Link>
                             </li>
+                            
                             <li>
-                                <Link href="/home" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Ship Anywhere</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/catering" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Catering</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/gift-cards" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                <Link href="/giftcard" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
                                     <span className="transform group-hover:translate-x-1 transition-transform duration-300">Gift Cards</span>
                                 </Link>
                             </li>
@@ -51,16 +42,7 @@ export default function Footer() {
                                     <span className="transform group-hover:translate-x-1 transition-transform duration-300">Our Mission</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link href="/locations" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Locations</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/careers" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Careers</span>
-                                </Link>
-                            </li>
+
                         </ul>
                     </div>
 
@@ -79,12 +61,12 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/vendor-submission" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                <Link href="/vendor" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
                                     <span className="transform group-hover:translate-x-1 transition-transform duration-300">Vendor Submission</span>
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/vendor-dashboard" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                <Link href="/vendor" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
                                     <span className="transform group-hover:translate-x-1 transition-transform duration-300">Vendor Dashboard</span>
                                 </Link>
                             </li>

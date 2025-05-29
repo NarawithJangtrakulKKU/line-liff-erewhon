@@ -53,10 +53,7 @@ export default function Navbar() {
 
     const menuItems = [
         { title: "Delivery | Pickup", href: "/home" },
-        { title: "Ship Anywhere", href: "/shipping" },
-        { title: "Catering", href: "/catering" },
-        { title: "Digital Gift Cards", href: "/gift-cards" },
-        { title: "Locations", href: "/locations" },
+        { title: "Digital Gift Cards", href: "/giftcard" },
         { title: "FAQs", href: "/faqs" },
         { title: "Our Mission", href: "/about" },
         { title: "Contact Us", href: "/contact" }
