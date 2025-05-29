@@ -139,6 +139,23 @@ const paymentMethodConfig = {
   LINE_PAY: 'LINE Pay'
 }
 
+// Utility function สำหรับ format ขนาดไฟล์
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// ฟังก์ชันสำหรับตรวจสอบประเภทไฟล์
+const getFileTypeInfo = (file: File) => {
+  const isImage = file.type.startsWith('image/')
+  const isVideo = file.type.startsWith('video/')
+  const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+  return { isImage, isVideo, maxSize }
+}
+
 export default function PurchaseHistoryPage() {
   const { isInitialized, isLoggedIn, dbUser } = useLiff()
   const router = useRouter()
@@ -160,6 +177,10 @@ export default function PurchaseHistoryPage() {
   const [uploadingMedia, setUploadingMedia] = useState(false)
   const [showMediaPreview, setShowMediaPreview] = useState(false)
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0)
+  
+  // เพิ่ม states สำหรับ upload progress
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState<string>('')
 
   useEffect(() => {
     if (isInitialized && !isLoggedIn) {
@@ -216,8 +237,7 @@ export default function PurchaseHistoryPage() {
 
     // Validate files
     for (let file of Array.from(files)) {
-      const isImage = file.type.startsWith('image/')
-      const isVideo = file.type.startsWith('video/')
+      const { isImage, isVideo, maxSize } = getFileTypeInfo(file)
       
       if (!isImage && !isVideo) {
         alert('กรุณาเลือกไฟล์รูปภาพหรือวิดีโอเท่านั้น')
@@ -225,10 +245,21 @@ export default function PurchaseHistoryPage() {
       }
       
       // Check file size (max 50MB for videos, 10MB for images)
-      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+      const maxSizeMB = isVideo ? '50MB' : '10MB'
+      
       if (file.size > maxSize) {
-        alert(`ขนาดไฟล์ต้องไม่เกิน ${isVideo ? '50MB' : '10MB'}`)
+        alert(`ขนาดไฟล์ ${file.name} (${fileSizeMB}MB) เกินกำหนด\nไฟล์${isVideo ? 'วิดีโอ' : 'รูปภาพ'}ต้องไม่เกิน ${maxSizeMB}`)
         return
+      }
+      
+      // Warning for large video files
+      if (isVideo && file.size > 20 * 1024 * 1024) {
+        const proceed = confirm(
+          `ไฟล์วิดีโอ "${file.name}" มีขนาด ${fileSizeMB}MB\n` +
+          'การอัปโหลดอาจใช้เวลานาน คุณต้องการดำเนินการต่อหรือไม่?'
+        )
+        if (!proceed) return
       }
     }
 
@@ -280,6 +311,8 @@ export default function PurchaseHistoryPage() {
 
     try {
       setSubmittingReview(true)
+      setUploadProgress(0)
+      setUploadStatus('กำลังเตรียมข้อมูล...')
       
       // Create FormData for file upload
       const formData = new FormData()
@@ -289,18 +322,39 @@ export default function PurchaseHistoryPage() {
       formData.append('rating', reviewRating.toString())
       formData.append('comment', reviewComment.trim() || '')
       
-      // Add media files
-      reviewMedia.forEach((file, index) => {
-        formData.append(`media-${index}`, file)
-      })
+      // Add media files with progress tracking
+      if (reviewMedia.length > 0) {
+        setUploadStatus(`กำลังเตรียมไฟล์ ${reviewMedia.length} ไฟล์...`)
+        reviewMedia.forEach((file, index) => {
+          formData.append(`media-${index}`, file)
+        })
+        setUploadProgress(20)
+      }
+
+      setUploadStatus('กำลังอัปโหลด...')
+      setUploadProgress(30)
+
+      // Create AbortController for timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        controller.abort()
+      }, 120000) // 2 minutes timeout
 
       const response = await fetch('/api/reviews', {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
+      setUploadProgress(80)
+      setUploadStatus('กำลังประมวลผล...')
 
       const result = await response.json()
       console.log('API response:', { status: response.status, result })
+
+      setUploadProgress(100)
+      setUploadStatus('เสร็จสิ้น!')
 
       if (response.ok) {
         setShowReviewModal(false)
@@ -320,15 +374,32 @@ export default function PurchaseHistoryPage() {
         // Handle specific error cases
         if (response.status === 403) {
           alert(result.message || 'คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
+        } else if (response.status === 413) {
+          alert('ไฟล์มีขนาดใหญ่เกินไป กรุณาลดขนาดไฟล์หรือเลือกไฟล์อื่น')
+        } else if (response.status === 408 || response.status === 504) {
+          alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง')
         } else {
           alert(result.message || 'เกิดข้อผิดพลาดในการส่งรีวิว')
         }
       }
     } catch (error) {
       console.error('Error submitting review:', error)
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง หรือลดขนาดไฟล์')
+        } else if (error.message.includes('Failed to fetch')) {
+          alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')
+        } else {
+          alert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
+        }
+      } else {
+        alert('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง')
+      }
     } finally {
       setSubmittingReview(false)
+      setUploadProgress(0)
+      setUploadStatus('')
     }
   }
 
@@ -868,7 +939,7 @@ export default function PurchaseHistoryPage() {
                       <div className="grid grid-cols-3 gap-3">
                         {mediaPreview.map((preview, index) => {
                           const file = reviewMedia[index]
-                          const isVideo = file.type.startsWith('video/')
+                          const { isImage, isVideo } = getFileTypeInfo(file)
                           
                           return (
                             <div key={index} className="relative group">
@@ -922,6 +993,13 @@ export default function PurchaseHistoryPage() {
                                   {isVideo ? 'วิดีโอ' : 'รูปภาพ'}
                                 </Badge>
                               </div>
+                              
+                              {/* File size indicator */}
+                              <div className="absolute bottom-1 right-1">
+                                <Badge variant="secondary" className="text-xs px-1 py-0 bg-black/50 text-white">
+                                  {formatFileSize(file.size)}
+                                </Badge>
+                              </div>
                             </div>
                           )
                         })}
@@ -944,6 +1022,11 @@ export default function PurchaseHistoryPage() {
                             <p className="text-xs text-gray-400 mt-1">
                               สูงสุด 5 ไฟล์ (เหลือ {5 - mediaPreview.length} ไฟล์)
                             </p>
+                            {reviewMedia.some(file => getFileTypeInfo(file).isVideo) && (
+                              <p className="text-xs text-amber-600 mt-1 font-medium">
+                                ⚠️ วิดีโอขนาดใหญ่อาจใช้เวลาอัปโหลดนาน
+                              </p>
+                            )}
                           </div>
 
                           <div className="flex flex-col sm:flex-row gap-2 justify-center">
@@ -1020,6 +1103,29 @@ export default function PurchaseHistoryPage() {
                       )}
                     </Button>
                   </div>
+
+                  {/* Upload Progress */}
+                  {submittingReview && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">{uploadStatus}</span>
+                        <span className="text-gray-600">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-orange-500 h-2 rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      {uploadProgress < 100 && (
+                        <p className="text-xs text-gray-500 text-center">
+                          {reviewMedia.some(file => file.type.startsWith('video/')) 
+                            ? 'การอัปโหลดวิดีโออาจใช้เวลาสักครู่ กรุณารอสักครู่...' 
+                            : 'กำลังประมวลผล...'}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </DialogContent>

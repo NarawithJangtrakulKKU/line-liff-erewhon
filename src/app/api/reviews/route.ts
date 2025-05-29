@@ -119,7 +119,19 @@ export async function GET(request: NextRequest) {
 // POST - Create a new review
 export async function POST(request: NextRequest) {
   try {
+    // Set timeout for the entire operation
+    const startTime = Date.now()
+    const TIMEOUT_MS = 120000 // 2 minutes
+    
     const formData = await request.formData()
+    
+    // Check timeout after formData parsing
+    if (Date.now() - startTime > TIMEOUT_MS) {
+      return NextResponse.json(
+        { error: 'Request timeout during file parsing' },
+        { status: 408 }
+      )
+    }
     
     // Extract text fields from FormData
     const userId = formData.get('userId')?.toString()
@@ -135,6 +147,15 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    console.log('Starting review creation process', {
+      userId,
+      productId,
+      orderId,
+      rating,
+      hasComment: !!comment,
+      timestamp: new Date().toISOString()
+    })
 
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -218,17 +239,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log(`Found ${uploadedFiles.length} files to process`)
+
     // Process each uploaded file
     for (let i = 0; i < uploadedFiles.length; i++) {
       const file = uploadedFiles[i]
       
+      // Check timeout before processing each file
+      if (Date.now() - startTime > TIMEOUT_MS) {
+        return NextResponse.json(
+          { error: 'Request timeout during file processing' },
+          { status: 408 }
+        )
+      }
+      
       if (file.size === 0) continue
+
+      console.log(`Processing file ${i + 1}/${uploadedFiles.length}:`, {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      })
 
       // Validate file type and size
       const isImage = file.type.startsWith('image/')
       const isVideo = file.type.startsWith('video/')
       
       if (!isImage && !isVideo) {
+        console.error(`Invalid file type: ${file.type}`)
         return NextResponse.json(
           { error: `File ${file.name} is not a valid image or video` },
           { status: 400 }
@@ -238,9 +276,10 @@ export async function POST(request: NextRequest) {
       // Check file size limits
       const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024 // 50MB for video, 10MB for image
       if (file.size > maxSize) {
+        console.error(`File size too large: ${file.size} bytes, max: ${maxSize} bytes`)
         return NextResponse.json(
           { error: `File ${file.name} exceeds size limit (${isVideo ? '50MB' : '10MB'})` },
-          { status: 400 }
+          { status: 413 }
         )
       }
 
@@ -257,10 +296,14 @@ export async function POST(request: NextRequest) {
         const fileName = `review_${timestamp}_${randomString}.${fileExtension}`
         const filePath = join(uploadDir, fileName)
 
+        console.log(`Saving file to: ${filePath}`)
+
         // Convert file to buffer and save
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
         await writeFile(filePath, buffer)
+
+        console.log(`File saved successfully: ${fileName}`)
 
         // Add to media files array
         mediaFiles.push({
@@ -274,11 +317,13 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Error uploading file:', error)
         return NextResponse.json(
-          { error: `Failed to upload file ${file.name}` },
+          { error: `Failed to upload file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}` },
           { status: 500 }
         )
       }
     }
+
+    console.log(`Successfully processed ${mediaFiles.length} media files`)
 
     // Create review with media files
     const review = await prisma.review.create({
@@ -317,10 +362,33 @@ export async function POST(request: NextRequest) {
       success: true,
       review,
       message: 'Review created successfully'
-    }, { status: 201 })
+    }, { 
+      status: 201,
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      }
+    })
 
   } catch (error) {
     console.error('Error creating review:', error)
+    
+    // Check if it's a timeout or size error
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
+        return NextResponse.json(
+          { error: 'Request timeout - ลองลดขนาดไฟล์หรือจำนวนไฟล์', details: error.message },
+          { status: 408 }
+        )
+      }
+      if (error.message.includes('ENOSPC') || error.message.includes('space')) {
+        return NextResponse.json(
+          { error: 'Server storage full - ติดต่อผู้ดูแลระบบ', details: error.message },
+          { status: 507 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create review', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
