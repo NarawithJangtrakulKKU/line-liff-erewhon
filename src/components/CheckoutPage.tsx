@@ -232,9 +232,11 @@ export default function CheckoutPage() {
   }, [dbUser])
 
   // Fetch addresses
-  const fetchAddresses = useCallback(async () => {
+  const fetchAddresses = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true)
+      if (showLoading) {
+        setLoading(true)
+      }
       const { data } = await axios.get(`/api/user/addresses?userId=${dbUser?.id}`)
       const userAddresses = data.addresses || []
       setAddresses(userAddresses)
@@ -246,10 +248,15 @@ export default function CheckoutPage() {
       } else if (userAddresses.length > 0) {
         setSelectedAddress(userAddresses[0].id)
       }
+      
+      return userAddresses
     } catch (error) {
       console.error('Error fetching addresses:', error)
+      return []
     } finally {
-      setLoading(false)
+      if (showLoading) {
+        setLoading(false)
+      }
     }
   }, [dbUser])
 
@@ -280,14 +287,29 @@ export default function CheckoutPage() {
   // Add new address
   const handleAddAddress = async () => {
     try {
-      const { data } = await axios.post('/api/user/addresses', {
+      console.log('Adding address:', newAddress) // Debug log
+      
+      const response = await axios.post('/api/user/addresses', {
         ...newAddress,
         userId: dbUser?.id
       })
       
-      if (data.success) {
-        await fetchAddresses()
-        setSelectedAddress(data.address.id)
+      console.log('Add address response:', response.data) // Debug log
+      
+      if (response.data.success || response.data.address) {
+        // Refresh addresses list without showing loading spinner
+        const updatedAddresses = await fetchAddresses(false)
+        
+        // Set the newly added address as selected
+        const newAddressId = response.data.address?.id
+        if (newAddressId) {
+          setSelectedAddress(newAddressId)
+        } else if (updatedAddresses.length > 0) {
+          // If we can't get the new address ID, select the last one (most recent)
+          setSelectedAddress(updatedAddresses[updatedAddresses.length - 1].id)
+        }
+        
+        // Close dialog and reset form
         setShowAddressDialog(false)
         setNewAddress({
           name: '',
@@ -299,9 +321,20 @@ export default function CheckoutPage() {
           postalCode: '',
           isDefault: false
         })
+        
+        // Show success notification
+        showNotification('success', 'เพิ่มที่อยู่เรียบร้อยแล้ว')
+      } else {
+        console.error('Failed to add address:', response.data)
+        showNotification('error', 'ไม่สามารถเพิ่มที่อยู่ได้ กรุณาลองใหม่อีกครั้ง')
       }
     } catch (error) {
       console.error('Error adding address:', error)
+      if (axios.isAxiosError(error)) {
+        showNotification('error', error.response?.data?.error || 'เกิดข้อผิดพลาดในการเพิ่มที่อยู่')
+      } else {
+        showNotification('error', 'เกิดข้อผิดพลาดในการเพิ่มที่อยู่')
+      }
     }
   }
 

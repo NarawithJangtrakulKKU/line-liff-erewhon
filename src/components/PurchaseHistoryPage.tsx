@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import axios from 'axios'
 import { 
   ShoppingBag, 
   ChevronRight, 
@@ -79,6 +80,16 @@ interface Order {
   orderItems: OrderItem[]
 }
 
+// เพิ่ม interface สำหรับข้อมูลการรีวิว
+interface ReviewStatus {
+  productId: string
+  orderId: string
+  hasReviewed: boolean
+  reviewId?: string
+  rating?: number
+  reviewDate?: string
+}
+
 const statusConfig = {
   PENDING: { 
     label: 'รอการยืนยัน', 
@@ -148,6 +159,17 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+// ฟังก์ชันสำหรับแปลงค่า Decimal เป็น number อย่างปลอดภัย
+const safeNumber = (value: any): number => {
+  if (value === null || value === undefined) return 0
+  if (typeof value === 'number') return isNaN(value) ? 0 : value
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
 // ฟังก์ชันสำหรับตรวจสอบประเภทไฟล์
 const getFileTypeInfo = (file: File) => {
   const isImage = file.type.startsWith('image/')
@@ -182,6 +204,10 @@ export default function PurchaseHistoryPage() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadStatus, setUploadStatus] = useState<string>('')
 
+  // เพิ่ม state สำหรับเก็บสถานะการรีวิว
+  const [reviewStatuses, setReviewStatuses] = useState<ReviewStatus[]>([])
+  const [loadingReviewStatuses, setLoadingReviewStatuses] = useState(false)
+
   useEffect(() => {
     if (isInitialized && !isLoggedIn) {
       router.push('/')
@@ -195,14 +221,23 @@ export default function PurchaseHistoryPage() {
 
       try {
         setLoading(true)
-        const response = await fetch(`/api/orders?userId=${dbUser.id}`)
+        const response = await axios.get(`/api/orders?userId=${dbUser.id}`)
+        console.log('API Response:', response.data)
+        console.log('Orders raw data:', response.data.orders)
         
-        if (response.ok) {
-          const data = await response.json()
-          setOrders(data.orders || [])
-        } else {
-          console.error('Failed to fetch orders')
+        // ตรวจสอบข้อมูลแต่ละออเดอร์
+        if (response.data.orders) {
+          response.data.orders.forEach((order: any, index: number) => {
+            console.log(`Order ${index + 1}:`, {
+              id: order.id,
+              total: order.total,
+              totalType: typeof order.total,
+              isNaN: isNaN(order.total)
+            })
+          })
         }
+        
+        setOrders(response.data.orders || [])
       } catch (error) {
         console.error('Error fetching orders:', error)
       } finally {
@@ -215,12 +250,78 @@ export default function PurchaseHistoryPage() {
     }
   }, [dbUser])
 
+  // เพิ่มฟังก์ชันสำหรับโหลดสถานะการรีวิว
+  const fetchReviewStatuses = async () => {
+    if (!dbUser || orders.length === 0) return
+
+    try {
+      setLoadingReviewStatuses(true)
+      
+      // รวบรวม productId และ orderId ทั้งหมดจากคำสั่งซื้อที่สถานะเป็น DELIVERED
+      const deliveredOrders = orders.filter(order => order.status === 'DELIVERED')
+      const reviewChecks = deliveredOrders.flatMap(order => 
+        order.orderItems.map(item => ({
+          productId: item.product.id,
+          orderId: order.id
+        }))
+      )
+
+      if (reviewChecks.length === 0) {
+        setReviewStatuses([])
+        return
+      }
+
+      const response = await axios.post('/api/reviews/status', {
+        userId: dbUser.id,
+        checks: reviewChecks
+      })
+
+      setReviewStatuses(response.data.reviewStatuses || [])
+    } catch (error) {
+      console.error('Error fetching review statuses:', error)
+      // Don't show error to user, just log it - fallback to showing review buttons
+      setReviewStatuses([])
+    } finally {
+      setLoadingReviewStatuses(false)
+    }
+  }
+
+  // โหลดสถานะการรีวิวเมื่อมีข้อมูลคำสั่งซื้อ
+  useEffect(() => {
+    if (orders.length > 0) {
+      fetchReviewStatuses()
+    }
+  }, [orders, dbUser])
+
+  // ฟังก์ชันเพื่อเช็คว่าสินค้าถูกรีวิวแล้วหรือยัง
+  const getReviewStatus = (productId: string, orderId: string): ReviewStatus | null => {
+    return reviewStatuses.find(
+      status => status.productId === productId && status.orderId === orderId
+    ) || null
+  }
+
   const handleViewOrderDetail = (order: Order) => {
     setSelectedOrder(order)
     setShowOrderDetail(true)
   }
 
   const handleReviewProduct = (orderItem: OrderItem, orderId: string) => {
+    // เช็คว่าสินค้านี้ถูกรีวิวแล้วหรือยัง
+    const reviewStatus = getReviewStatus(orderItem.product.id, orderId)
+    
+    if (reviewStatus?.hasReviewed) {
+      // แสดงข้อความที่เป็นมิตรกับผู้ใช้มากขึ้น
+      alert(`คุณได้รีวิวสินค้า "${orderItem.product.name}" แล้ว\nให้คะแนน ${reviewStatus.rating} ดาว`)
+      return
+    }
+
+    // ตรวจสอบว่าคำสั่งซื้อเป็น DELIVERED หรือไม่
+    const order = orders.find(o => o.id === orderId)
+    if (!order || order.status !== 'DELIVERED') {
+      alert('คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
+      return
+    }
+
     setSelectedProduct({ ...orderItem, orderId })
     setReviewRating(0)
     setReviewComment('')
@@ -334,61 +435,58 @@ export default function PurchaseHistoryPage() {
       setUploadStatus('กำลังอัปโหลด...')
       setUploadProgress(30)
 
-      // Create AbortController for timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => {
-        controller.abort()
-      }, 120000) // 2 minutes timeout
-
-      const response = await fetch('/api/reviews', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal
+      const response = await axios.post('/api/reviews', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 120000, // 2 minutes timeout
       })
 
-      clearTimeout(timeoutId)
       setUploadProgress(80)
       setUploadStatus('กำลังประมวลผล...')
 
-      const result = await response.json()
-      console.log('API response:', { status: response.status, result })
+      console.log('API response:', { status: response.status, data: response.data })
 
       setUploadProgress(100)
       setUploadStatus('เสร็จสิ้น!')
 
-      if (response.ok) {
-        setShowReviewModal(false)
-        setSelectedProduct(null)
-        setReviewRating(0)
-        setReviewComment('')
-        // Clean up media
-        mediaPreview.forEach(url => {
-          if (url.startsWith('blob:')) {
-            URL.revokeObjectURL(url)
-          }
-        })
-        setReviewMedia([])
-        setMediaPreview([])
-        setShowSuccessModal(true)
-      } else {
-        // Handle specific error cases
-        if (response.status === 403) {
-          alert(result.message || 'คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
-        } else if (response.status === 413) {
-          alert('ไฟล์มีขนาดใหญ่เกินไป กรุณาลดขนาดไฟล์หรือเลือกไฟล์อื่น')
-        } else if (response.status === 408 || response.status === 504) {
-          alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง')
-        } else {
-          alert(result.message || 'เกิดข้อผิดพลาดในการส่งรีวิว')
+      setShowReviewModal(false)
+      setSelectedProduct(null)
+      setReviewRating(0)
+      setReviewComment('')
+      // Clean up media
+      mediaPreview.forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url)
         }
-      }
+      })
+      setReviewMedia([])
+      setMediaPreview([])
+      setShowSuccessModal(true)
+      
+      // อัปเดตสถานะการรีวิวหลังจากส่งรีวิวสำเร็จ
+      fetchReviewStatuses()
     } catch (error) {
       console.error('Error submitting review:', error)
       
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
           alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง หรือลดขนาดไฟล์')
-        } else if (error.message.includes('Failed to fetch')) {
+        } else if (error.response) {
+          // Handle specific error status codes
+          const status = error.response.status
+          const message = error.response.data?.message
+          
+          if (status === 403) {
+            alert(message || 'คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
+          } else if (status === 413) {
+            alert('ไฟล์มีขนาดใหญ่เกินไป กรุณาลดขนาดไฟล์หรือเลือกไฟล์อื่น')
+          } else if (status === 408 || status === 504) {
+            alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง')
+          } else {
+            alert(message || 'เกิดข้อผิดพลาดในการส่งรีวิว')
+          }
+        } else if (error.request) {
           alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')
         } else {
           alert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง')
@@ -407,11 +505,14 @@ export default function PurchaseHistoryPage() {
     return product.images?.[0]?.imageUrl || product.image || undefined
   }
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | string | null | undefined) => {
+    // ใช้ safeNumber เพื่อแปลงค่าให้ปลอดภัย
+    const numPrice = safeNumber(price)
+    
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
       currency: 'THB'
-    }).format(price)
+    }).format(numPrice)
   }
 
   const formatDate = (dateString: string) => {
@@ -424,11 +525,14 @@ export default function PurchaseHistoryPage() {
     })
   }
 
-  const StarRating = ({ rating, onRatingChange, readonly = false }: { 
+  const StarRating = ({ rating, onRatingChange, readonly = false, size = 'default' }: { 
     rating: number, 
     onRatingChange?: (rating: number) => void,
-    readonly?: boolean 
+    readonly?: boolean,
+    size?: 'small' | 'default'
   }) => {
+    const starSize = size === 'small' ? 'h-4 w-4' : 'h-6 w-6'
+    
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -440,7 +544,7 @@ export default function PurchaseHistoryPage() {
             className={`${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform`}
           >
             <Star
-              className={`h-6 w-6 ${
+              className={`${starSize} ${
                 star <= rating
                   ? 'fill-yellow-400 text-yellow-400'
                   : 'text-gray-300'
@@ -525,7 +629,7 @@ export default function PurchaseHistoryPage() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">ยอดรวม</p>
                     <p className="text-2xl font-bold text-orange-600">
-                      {formatPrice(orders.reduce((sum, order) => sum + order.total, 0))}
+                      {formatPrice(orders.reduce((sum, order) => sum + safeNumber(order.total), 0))}
                     </p>
                   </div>
                   <Package className="h-8 w-8 text-orange-400" />
@@ -601,7 +705,7 @@ export default function PurchaseHistoryPage() {
                         <div>
                           <p className="text-xs text-gray-500 mb-1">จำนวนสินค้า</p>
                           <p className="text-sm font-medium">
-                            {order.orderItems.reduce((sum, item) => sum + item.quantity, 0)} ชิ้น
+                            {order.orderItems.reduce((sum, item) => sum + safeNumber(item.quantity), 0)} ชิ้น
                           </p>
                         </div>
                         <div>
@@ -817,29 +921,74 @@ export default function PurchaseHistoryPage() {
                       <div className="space-y-2 w-full">
                         <h4 className="font-medium text-gray-900">รีวิวสินค้า</h4>
                         <div className="grid gap-2">
-                          {selectedOrder.orderItems.map((item) => (
-                            <Button
-                              key={item.id}
-                              variant="outline"
-                              className="flex items-center justify-between p-3 h-auto"
-                              onClick={() => handleReviewProduct(item, selectedOrder.id)}
-                            >
-                              <div className="flex items-center gap-3">
-                                {getProductImageUrl(item.product) && (
-                                  <img
-                                    src={getProductImageUrl(item.product)}
-                                    alt={item.product.name}
-                                    className="w-8 h-8 rounded object-cover"
-                                  />
-                                )}
-                                <span className="text-left">{item.product.name}</span>
+                          {selectedOrder.orderItems.map((item) => {
+                            const reviewStatus = getReviewStatus(item.product.id, selectedOrder.id)
+                            const hasReviewed = reviewStatus?.hasReviewed || false
+                            
+                            return (
+                              <div
+                                key={item.id}
+                                className={`flex items-center justify-between p-3 rounded-lg border ${
+                                  hasReviewed 
+                                    ? 'bg-green-50 border-green-200' 
+                                    : 'bg-white border-gray-200 hover:border-orange-300 cursor-pointer'
+                                }`}
+                                onClick={hasReviewed ? undefined : () => handleReviewProduct(item, selectedOrder.id)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  {getProductImageUrl(item.product) && (
+                                    <img
+                                      src={getProductImageUrl(item.product)}
+                                      alt={item.product.name}
+                                      className="w-8 h-8 rounded object-cover"
+                                    />
+                                  )}
+                                  <span className="text-left">{item.product.name}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {hasReviewed ? (
+                                    <>
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      <div className="text-right">
+                                        <div className="flex items-center gap-1">
+                                          <StarRating 
+                                            rating={reviewStatus?.rating || 0} 
+                                            readonly={true}
+                                            size="small"
+                                          />
+                                        </div>
+                                        <span className="text-sm text-green-700 font-medium">
+                                          คุณรีวิวแล้ว
+                                        </span>
+                                        {reviewStatus?.reviewDate && (
+                                          <div className="text-xs text-green-600 mt-1">
+                                            {new Date(reviewStatus.reviewDate).toLocaleDateString('th-TH', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              year: 'numeric'
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </>
+                                  ) : loadingReviewStatuses ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400"></div>
+                                      <span className="text-sm text-gray-500">กำลังตรวจสอบ...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Star className="h-4 w-4 text-orange-500" />
+                                      <span className="text-sm text-orange-600 font-medium">
+                                        รีวิว
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Star className="h-4 w-4" />
-                                <span className="text-sm">รีวิว</span>
-                              </div>
-                            </Button>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}

@@ -24,6 +24,7 @@ import {
   Truck,
   XCircle
 } from 'lucide-react'
+import axios from 'axios'
 
 interface AnalyticsData {
   overview: {
@@ -117,11 +118,10 @@ export default function AdminAnalyticsPage() {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/analytics/overview')
-      const result = await response.json()
+      const response = await axios.get('/api/admin/analytics/overview')
       
-      if (result.success) {
-        setAnalyticsData(result.data)
+      if (response.data.success) {
+        setAnalyticsData(response.data.data)
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -132,11 +132,10 @@ export default function AdminAnalyticsPage() {
 
   const fetchSalesData = async () => {
     try {
-      const response = await fetch(`/api/admin/analytics/sales?period=${salesPeriod}`)
-      const result = await response.json()
+      const response = await axios.get(`/api/admin/analytics/sales?period=${salesPeriod}`)
       
-      if (result.success) {
-        setSalesData(result.data)
+      if (response.data.success) {
+        setSalesData(response.data.data)
       }
     } catch (error) {
       console.error('Error fetching sales data:', error)

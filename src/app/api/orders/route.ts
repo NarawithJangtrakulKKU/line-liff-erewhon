@@ -214,7 +214,28 @@ export async function GET(req: NextRequest) {
       }
 
       console.log('Returning order data for ID:', orderId)
-      return NextResponse.json({ success: true, order })
+      
+      // แปลง Decimal values เป็น numbers เพื่อป้องกัน NaN
+      const formattedOrder = {
+        ...order,
+        subtotal: Number(order.subtotal),
+        shippingFee: Number(order.shippingFee),
+        tax: Number(order.tax),
+        discount: Number(order.discount),
+        total: Number(order.total),
+        orderItems: order.orderItems.map(item => ({
+          ...item,
+          price: Number(item.price),
+          total: Number(item.total),
+          product: {
+            ...item.product,
+            price: Number(item.product.price),
+            comparePrice: item.product.comparePrice ? Number(item.product.comparePrice) : null
+          }
+        }))
+      }
+      
+      return NextResponse.json({ success: true, order: formattedOrder })
     }
 
     if (userId) {
@@ -239,7 +260,28 @@ export async function GET(req: NextRequest) {
       })
 
       console.log('Found orders for user:', orders.length)
-      return NextResponse.json({ success: true, orders })
+      
+      // แปลง Decimal values เป็น numbers เพื่อป้องกัน NaN
+      const formattedOrders = orders.map(order => ({
+        ...order,
+        subtotal: Number(order.subtotal),
+        shippingFee: Number(order.shippingFee),
+        tax: Number(order.tax),
+        discount: Number(order.discount),
+        total: Number(order.total),
+        orderItems: order.orderItems.map(item => ({
+          ...item,
+          price: Number(item.price),
+          total: Number(item.total),
+          product: {
+            ...item.product,
+            price: Number(item.product.price),
+            comparePrice: item.product.comparePrice ? Number(item.product.comparePrice) : null
+          }
+        }))
+      }))
+      
+      return NextResponse.json({ success: true, orders: formattedOrders })
     }
 
     console.log('Missing required parameter: userId or orderId')
