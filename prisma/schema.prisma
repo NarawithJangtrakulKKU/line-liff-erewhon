@@ -80,7 +80,7 @@ model Product {
   name        String
   description String?
   price       Decimal  @db.Decimal(10, 2)
-  comparePrice Decimal? @db.Decimal(10, 2) // ราคาเปรียบเทียب (ราคาขีดฆ่า)
+  comparePrice Decimal? @db.Decimal(10, 2) // ราคาเปรียบเทียบ (ราคาขีดฆ่า)
   sku         String?  @unique // รหัสสินค้า
   stock       Int      @default(0)
   weight      Decimal? @db.Decimal(8, 2) // น้ำหนัก (กรัม)
@@ -164,6 +164,7 @@ model Order {
   address         Address     @relation(fields: [addressId], references: [id])
   orderItems      OrderItem[]
   orderStatusLogs OrderStatusLog[]
+  reviews         Review[]    // ✅ เพิ่ม relation ใหม่
 
   @@map("orders")
 }
@@ -180,6 +181,7 @@ model OrderItem {
   // Relations
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
+  reviews   Review[] // ✅ เพิ่ม relation ใหม่ - รีวิวเฉพาะสินค้าในออเดอร์นี้
 
   @@map("order_items")
 }
@@ -198,22 +200,67 @@ model OrderStatusLog {
   @@map("order_status_logs")
 }
 
-// ตารางรีวิวสินค้า
+// ✅ ตารางรีวิวสินค้า - ปรับปรุงใหม่
 model Review {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  rating    Int      // คะแนน 1-5
-  comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  orderId     String   // ✅ เพิ่ม orderId - รีวิวต้องเชื่อมกับ order เฉพาะ
+  orderItemId String   // ✅ เพิ่ม orderItemId - รีวิวเฉพาะสินค้าใน order item
+  rating      Int      // คะแนน 1-5
+  comment     String?
+  
+  // ✅ Media files - รองรับทั้งรูปและวิดีโอ
+  mediaFiles  ReviewMedia[] // relation กับตาราง ReviewMedia
+  
+  isVerified  Boolean  @default(false) // ✅ ตรวจสอบว่าซื้อจริงหรือไม่
+  isHelpful   Int      @default(0) // ✅ จำนวนคนที่กดว่ารีวิวนี้มีประโยชน์
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId]) // ผู้ใช้รีวิวสินค้าได้ครั้งเดียว
+  // ✅ เปลี่ยน unique constraint - ให้รีวิวได้ครั้งเดียวต่อ orderItem
+  @@unique([userId, orderItemId]) // ผู้ใช้รีวิวสินค้าใน order item เดียวกันได้ครั้งเดียว
   @@map("reviews")
+}
+
+// ✅ ตารางสำหรับเก็บไฟล์มีเดียในรีวิว (รูป/วิดีโอ)
+model ReviewMedia {
+  id          String      @id @default(cuid())
+  reviewId    String
+  mediaType   MediaType   // IMAGE หรือ VIDEO
+  mediaUrl    String      // URL ของไฟล์
+  thumbnailUrl String?    // thumbnail สำหรับวิดีโอ
+  fileName    String?     // ชื่อไฟล์เดิม
+  fileSize    Int?        // ขนาดไฟล์ (bytes)
+  duration    Int?        // ความยาววิดีโอ (seconds) - สำหรับวิดีโอเท่านั้น
+  altText     String?     // alternative text สำหรับ accessibility
+  sortOrder   Int         @default(0) // ลำดับการแสดง
+  createdAt   DateTime    @default(now())
+
+  // Relations
+  review      Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_media")
+}
+
+// ✅ เพิ่มตารางสำหรับ Review Helpfulness (การโหวตว่ารีวิวมีประโยชน์)
+model ReviewHelpful {
+  id       String @id @default(cuid())
+  reviewId String
+  userId   String
+  isHelpful Boolean // true = helpful, false = not helpful
+  createdAt DateTime @default(now())
+
+  // Relations (อ้างอิงแยกเพื่อหลีกเลี่ยง circular dependency)
+  @@unique([reviewId, userId]) // ผู้ใช้โหวตรีวิวเดียวกันได้ครั้งเดียว
+  @@map("review_helpful")
 }
 
 // Enums
@@ -248,6 +295,12 @@ enum PaymentMethod {
 }
 
 enum ShippingMethod {
-  TH_POST // พัสดุธรรมดา
-  TH_EXPRESS // พัสดุด่วน
+  TH_POST       // พัสดุธรรมดา
+  TH_EXPRESS    // พัสดุด่วน
+}
+
+// ✅ Enum สำหรับประเภทไฟล์มีเดีย
+enum MediaType {
+  IMAGE         // รูปภาพ (JPG, PNG, GIF, WebP)
+  VIDEO         // วิดีโอ (MP4, WebM, MOV)
 }
