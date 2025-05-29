@@ -15,7 +15,9 @@ import {
   Tag,
   ImageIcon,
   AlertCircle,
-  X
+  X,
+  User,
+  Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -45,14 +47,35 @@ interface ProductImage {
   sortOrder: number;
 }
 
+// ประเภทสำหรับประเภทไฟล์มีเดีย
+enum MediaType {
+  IMAGE = 'IMAGE',
+  VIDEO = 'VIDEO'
+}
+
+// ประเภทสำหรับไฟล์มีเดียในรีวิว
+interface ReviewMedia {
+  id: string;
+  mediaType: MediaType;
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  duration?: number;
+  altText?: string;
+  sortOrder: number;
+}
+
 // ประเภทสำหรับรีวิว
 interface ProductReview {
   id: string;
   rating: number;
   comment?: string;
   createdAt: string;
+  mediaFiles: ReviewMedia[];
   user: {
     displayName?: string;
+    pictureUrl?: string;
   };
 }
 
@@ -239,6 +262,22 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // ฟอร์แมตขนาดไฟล์
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  // ฟอร์แมตระยะเวลาวิดีโอ
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return '';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // แสดงดาว rating
@@ -647,23 +686,114 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
             {product.reviews.length > 0 ? (
               <div className="space-y-6">
                 {product.reviews.map((review) => (
-                  <div key={review.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center">
-                          {renderStars(review.rating)}
-                        </div>
-                        <span className="font-medium text-sm">
-                          {review.user.displayName || 'Anonymous User'}
-                        </span>
+                  <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                    <div className="flex items-start gap-4">
+                      {/* User Avatar */}
+                      <div className="flex-shrink-0">
+                        {review.user.pictureUrl ? (
+                          <img
+                            src={review.user.pictureUrl}
+                            alt={review.user.displayName || 'User'}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <User className="h-5 w-5 text-gray-500" />
+                          </div>
+                        )}
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {formatDate(review.createdAt)}
-                      </span>
+                      
+                      {/* Review Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-gray-900">
+                              {review.user.displayName || 'Anonymous User'}
+                            </span>
+                            <div className="flex items-center">
+                              {renderStars(review.rating)}
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            {formatDate(review.createdAt)}
+                          </span>
+                        </div>
+                        
+                        {review.comment && (
+                          <div className="mt-3">
+                            <p className="text-gray-600 leading-relaxed">{review.comment}</p>
+                          </div>
+                        )}
+
+                        {/* Review Media Files */}
+                        {review.mediaFiles && review.mediaFiles.length > 0 && (
+                          <div className="mt-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                              {review.mediaFiles
+                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .map((media) => (
+                                  <div
+                                    key={media.id}
+                                    className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group cursor-pointer hover:shadow-md transition-shadow"
+                                  >
+                                    {media.mediaType === MediaType.IMAGE ? (
+                                      <img
+                                        src={media.mediaUrl}
+                                        alt={media.altText || 'Review image'}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                        onClick={() => window.open(media.mediaUrl, '_blank')}
+                                      />
+                                    ) : (
+                                      <div 
+                                        className="relative w-full h-full"
+                                        onClick={() => window.open(media.mediaUrl, '_blank')}
+                                      >
+                                        {media.thumbnailUrl ? (
+                                          <img
+                                            src={media.thumbnailUrl}
+                                            alt={media.altText || 'Video thumbnail'}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                            <Play className="h-8 w-8 text-gray-400" />
+                                          </div>
+                                        )}
+                                        {/* Play Button Overlay */}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-all">
+                                          <div className="w-12 h-12 rounded-full bg-white bg-opacity-90 flex items-center justify-center">
+                                            <Play className="h-6 w-6 text-gray-800 ml-1" />
+                                          </div>
+                                        </div>
+                                        {/* Duration Badge */}
+                                        {media.duration && (
+                                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                                            {formatDuration(media.duration)}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                    
+                                    {/* File Info Tooltip */}
+                                    {(media.fileName || media.fileSize) && (
+                                      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded max-w-[120px] truncate">
+                                          {media.fileName && (
+                                            <div className="truncate">{media.fileName}</div>
+                                          )}
+                                          {media.fileSize && (
+                                            <div>{formatFileSize(media.fileSize)}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {review.comment && (
-                      <p className="text-gray-600 mt-2">{review.comment}</p>
-                    )}
                   </div>
                 ))}
               </div>

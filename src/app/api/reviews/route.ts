@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
 
 const prisma = new PrismaClient()
 
@@ -116,13 +118,23 @@ export async function GET(request: NextRequest) {
 
 // POST - Create a new review
 export async function POST(request: NextRequest) {
-  let body: any
   try {
-    body = await request.json()
+    const formData = await request.formData()
     
-    // Validate request data
-    const validatedData = createReviewSchema.parse(body)
-    const { userId, productId, orderId, rating, comment, mediaFiles } = validatedData
+    // Extract text fields from FormData
+    const userId = formData.get('userId')?.toString()
+    const productId = formData.get('productId')?.toString()
+    const orderId = formData.get('orderId')?.toString()
+    const rating = parseInt(formData.get('rating')?.toString() || '0')
+    const comment = formData.get('comment')?.toString() || null
+
+    // Validate required fields
+    if (!userId || !productId || !orderId || !rating || rating < 1 || rating > 5) {
+      return NextResponse.json(
+        { error: 'Missing or invalid required fields' },
+        { status: 400 }
+      )
+    }
 
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -195,6 +207,79 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Process uploaded media files
+    const mediaFiles: any[] = []
+    const uploadedFiles: File[] = []
+    
+    // Collect all uploaded files
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('media-') && value instanceof File) {
+        uploadedFiles.push(value)
+      }
+    }
+
+    // Process each uploaded file
+    for (let i = 0; i < uploadedFiles.length; i++) {
+      const file = uploadedFiles[i]
+      
+      if (file.size === 0) continue
+
+      // Validate file type and size
+      const isImage = file.type.startsWith('image/')
+      const isVideo = file.type.startsWith('video/')
+      
+      if (!isImage && !isVideo) {
+        return NextResponse.json(
+          { error: `File ${file.name} is not a valid image or video` },
+          { status: 400 }
+        )
+      }
+
+      // Check file size limits
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024 // 50MB for video, 10MB for image
+      if (file.size > maxSize) {
+        return NextResponse.json(
+          { error: `File ${file.name} exceeds size limit (${isVideo ? '50MB' : '10MB'})` },
+          { status: 400 }
+        )
+      }
+
+      try {
+        // Create upload directory based on file type
+        const fileTypeDir = isImage ? 'images' : 'videos'
+        const uploadDir = join(process.cwd(), 'public', 'uploads', 'reviews', fileTypeDir)
+        await mkdir(uploadDir, { recursive: true })
+
+        // Generate unique filename
+        const timestamp = Date.now()
+        const randomString = Math.random().toString(36).substring(2, 15)
+        const fileExtension = file.name.split('.').pop()
+        const fileName = `review_${timestamp}_${randomString}.${fileExtension}`
+        const filePath = join(uploadDir, fileName)
+
+        // Convert file to buffer and save
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        await writeFile(filePath, buffer)
+
+        // Add to media files array
+        mediaFiles.push({
+          mediaType: isImage ? 'IMAGE' : 'VIDEO',
+          mediaUrl: `/uploads/reviews/${fileTypeDir}/${fileName}`,
+          fileName: file.name,
+          fileSize: file.size,
+          sortOrder: i
+        })
+
+      } catch (error) {
+        console.error('Error uploading file:', error)
+        return NextResponse.json(
+          { error: `Failed to upload file ${file.name}` },
+          { status: 500 }
+        )
+      }
+    }
+
     // Create review with media files
     const review = await prisma.review.create({
       data: {
@@ -209,11 +294,8 @@ export async function POST(request: NextRequest) {
           create: mediaFiles.map((media, index) => ({
             mediaType: media.mediaType,
             mediaUrl: media.mediaUrl,
-            thumbnailUrl: media.thumbnailUrl,
             fileName: media.fileName,
             fileSize: media.fileSize,
-            duration: media.duration,
-            altText: media.altText,
             sortOrder: index
           }))
         }
@@ -233,22 +315,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      review
+      review,
+      message: 'Review created successfully'
     }, { status: 201 })
 
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error('Validation failed:', error.errors)
-      console.error('Request body:', body)
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
-        { status: 400 }
-      )
-    }
-
     console.error('Error creating review:', error)
     return NextResponse.json(
-      { error: 'Failed to create review' },
+      { error: 'Failed to create review', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
