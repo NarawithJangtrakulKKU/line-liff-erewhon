@@ -35,7 +35,7 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/gift-cards" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
+                                <Link href="/giftcard" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
                                     <span className="transform group-hover:translate-x-1 transition-transform duration-300">Gift Cards</span>
                                 </Link>
                             </li>

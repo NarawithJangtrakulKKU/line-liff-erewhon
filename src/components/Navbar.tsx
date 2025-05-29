@@ -55,7 +55,7 @@ export default function Navbar() {
         { title: "Delivery | Pickup", href: "/home" },
         { title: "Ship Anywhere", href: "/shipping" },
         { title: "Catering", href: "/catering" },
-        { title: "Digital Gift Cards", href: "/gift-cards" },
+        { title: "Digital Gift Cards", href: "/giftcard" },
         { title: "Locations", href: "/locations" },
         { title: "FAQs", href: "/faqs" },
         { title: "Our Mission", href: "/about" },
