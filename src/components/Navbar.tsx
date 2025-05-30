@@ -14,8 +14,6 @@ export default function Navbar() {
     const { dbUser } = useLiff();
     const pathname = usePathname();
 
-    console.log(dbUser?.id);
-
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 10);

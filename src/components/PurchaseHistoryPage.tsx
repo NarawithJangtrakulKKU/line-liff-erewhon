@@ -295,9 +295,11 @@ export default function PurchaseHistoryPage() {
 
   // ฟังก์ชันเพื่อเช็คว่าสินค้าถูกรีวิวแล้วหรือยัง
   const getReviewStatus = (productId: string, orderId: string): ReviewStatus | null => {
-    return reviewStatuses.find(
+    const status = reviewStatuses.find(
       status => status.productId === productId && status.orderId === orderId
     ) || null
+    
+    return status
   }
 
   const handleViewOrderDetail = (order: Order) => {
@@ -858,7 +860,7 @@ export default function PurchaseHistoryPage() {
                     <div className="space-y-3">
                       {selectedOrder.orderItems.map((item) => {
                         const reviewStatus = getReviewStatus(item.product.id, selectedOrder.id)
-                        const hasReviewed = reviewStatus !== null
+                        const hasReviewed = reviewStatus?.hasReviewed === true
                         const imageUrl = getProductImageUrl(item.product)
                         
                         return (
@@ -979,7 +981,7 @@ export default function PurchaseHistoryPage() {
                         <div className="grid gap-2">
                           {selectedOrder.orderItems.map((item) => {
                             const reviewStatus = getReviewStatus(item.product.id, selectedOrder.id)
-                            const hasReviewed = reviewStatus !== null
+                            const hasReviewed = reviewStatus?.hasReviewed === true
                             const imageUrl = getProductImageUrl(item.product)
                             
                             return (
