@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import axios from 'axios'
 import { 
   ShoppingBag, 
@@ -33,7 +34,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -160,7 +161,7 @@ const formatFileSize = (bytes: number): string => {
 }
 
 // ฟังก์ชันสำหรับแปลงค่า Decimal เป็น number อย่างปลอดภัย
-const safeNumber = (value: any): number => {
+const safeNumber = (value: number | string | null | undefined): number => {
   if (value === null || value === undefined) return 0
   if (typeof value === 'number') return isNaN(value) ? 0 : value
   if (typeof value === 'string') {
@@ -193,10 +194,9 @@ export default function PurchaseHistoryPage() {
   const [submittingReview, setSubmittingReview] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   
-  // New states for media upload
+  // New states for media
   const [reviewMedia, setReviewMedia] = useState<File[]>([])
   const [mediaPreview, setMediaPreview] = useState<string[]>([])
-  const [uploadingMedia, setUploadingMedia] = useState(false)
   const [showMediaPreview, setShowMediaPreview] = useState(false)
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0)
   
@@ -227,7 +227,7 @@ export default function PurchaseHistoryPage() {
         
         // ตรวจสอบข้อมูลแต่ละออเดอร์
         if (response.data.orders) {
-          response.data.orders.forEach((order: any, index: number) => {
+          response.data.orders.forEach((order: Order, index: number) => {
             console.log(`Order ${index + 1}:`, {
               id: order.id,
               total: order.total,
@@ -251,7 +251,7 @@ export default function PurchaseHistoryPage() {
   }, [dbUser])
 
   // เพิ่มฟังก์ชันสำหรับโหลดสถานะการรีวิว
-  const fetchReviewStatuses = async () => {
+  const fetchReviewStatuses = useCallback(async () => {
     if (!dbUser || orders.length === 0) return
 
     try {
@@ -284,14 +284,14 @@ export default function PurchaseHistoryPage() {
     } finally {
       setLoadingReviewStatuses(false)
     }
-  }
+  }, [dbUser, orders])
 
   // โหลดสถานะการรีวิวเมื่อมีข้อมูลคำสั่งซื้อ
   useEffect(() => {
     if (orders.length > 0) {
       fetchReviewStatuses()
     }
-  }, [orders, dbUser])
+  }, [orders, dbUser, fetchReviewStatuses])
 
   // ฟังก์ชันเพื่อเช็คว่าสินค้าถูกรีวิวแล้วหรือยัง
   const getReviewStatus = (productId: string, orderId: string): ReviewStatus | null => {
@@ -337,7 +337,7 @@ export default function PurchaseHistoryPage() {
     if (!files || files.length === 0) return
 
     // Validate files
-    for (let file of Array.from(files)) {
+    for (const file of Array.from(files)) {
       const { isImage, isVideo, maxSize } = getFileTypeInfo(file)
       
       if (!isImage && !isVideo) {
@@ -732,9 +732,11 @@ export default function PurchaseHistoryPage() {
                         {order.orderItems.slice(0, 2).map((item) => (
                           <div key={item.id} className="flex items-center gap-3 text-sm">
                             {getProductImageUrl(item.product) && (
-                              <img
-                                src={getProductImageUrl(item.product)}
+                              <Image
+                                src={getProductImageUrl(item.product)!}
                                 alt={item.product.name}
+                                width={32}
+                                height={32}
                                 className="w-8 h-8 rounded object-cover"
                               />
                             )}
@@ -854,9 +856,11 @@ export default function PurchaseHistoryPage() {
                       {selectedOrder.orderItems.map((item) => (
                         <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                           {getProductImageUrl(item.product) && (
-                            <img
-                              src={getProductImageUrl(item.product)}
+                            <Image
+                              src={getProductImageUrl(item.product)!}
                               alt={item.product.name}
+                              width={32}
+                              height={32}
                               className="w-12 h-12 rounded object-cover"
                             />
                           )}
@@ -937,9 +941,11 @@ export default function PurchaseHistoryPage() {
                               >
                                 <div className="flex items-center gap-3">
                                   {getProductImageUrl(item.product) && (
-                                    <img
-                                      src={getProductImageUrl(item.product)}
+                                    <Image
+                                      src={getProductImageUrl(item.product)!}
                                       alt={item.product.name}
+                                      width={32}
+                                      height={32}
                                       className="w-8 h-8 rounded object-cover"
                                     />
                                   )}
@@ -1028,9 +1034,11 @@ export default function PurchaseHistoryPage() {
                   {/* Product Info */}
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     {getProductImageUrl(selectedProduct.product) && (
-                      <img
-                        src={getProductImageUrl(selectedProduct.product)}
+                      <Image
+                        src={getProductImageUrl(selectedProduct.product)!}
                         alt={selectedProduct.product.name}
+                        width={32}
+                        height={32}
                         className="w-12 h-12 rounded object-cover"
                       />
                     )}
@@ -1088,7 +1096,7 @@ export default function PurchaseHistoryPage() {
                       <div className="grid grid-cols-3 gap-3">
                         {mediaPreview.map((preview, index) => {
                           const file = reviewMedia[index]
-                          const { isImage, isVideo } = getFileTypeInfo(file)
+                          const { isVideo } = getFileTypeInfo(file)
                           
                           return (
                             <div key={index} className="relative group">
@@ -1104,9 +1112,11 @@ export default function PurchaseHistoryPage() {
                                   </div>
                                 </div>
                               ) : (
-                                <img
+                                <Image
                                   src={preview}
                                   alt={`Review image ${index + 1}`}
+                                  width={96}
+                                  height={96}
                                   className="w-full h-24 object-cover rounded-lg border"
                                 />
                               )}
@@ -1184,7 +1194,6 @@ export default function PurchaseHistoryPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => fileInputRef.current?.click()}
-                              disabled={uploadingMedia}
                               className="flex items-center gap-2"
                             >
                               <FileImage className="h-4 w-4" />
@@ -1196,7 +1205,6 @@ export default function PurchaseHistoryPage() {
                               variant="outline"
                               size="sm"
                               onClick={handleCameraCapture}
-                              disabled={uploadingMedia}
                               className="flex items-center gap-2"
                             >
                               <Camera className="h-4 w-4" />
@@ -1303,9 +1311,11 @@ export default function PurchaseHistoryPage() {
                         className="w-full max-h-96 rounded-lg"
                       />
                     ) : (
-                      <img
+                      <Image
                         src={mediaPreview[selectedMediaIndex]}
                         alt={`Preview ${selectedMediaIndex + 1}`}
+                        width={384}
+                        height={384}
                         className="w-full max-h-96 object-contain rounded-lg"
                       />
                     )}
