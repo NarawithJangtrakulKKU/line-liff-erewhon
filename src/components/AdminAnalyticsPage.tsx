@@ -14,9 +14,7 @@ import {
   ShoppingCart, 
   Package, 
   DollarSign,
-  Calendar,
   BarChart3,
-  PieChart,
   Activity,
   AlertCircle,
   CheckCircle,
@@ -113,7 +111,7 @@ export default function AdminAnalyticsPage() {
     if (activeTab === 'sales') {
       fetchSalesData()
     }
-  }, [activeTab, salesPeriod])
+  }, [activeTab, salesPeriod]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchAnalyticsData = async () => {
     try {

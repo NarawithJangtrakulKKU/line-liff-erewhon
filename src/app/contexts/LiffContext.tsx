@@ -4,6 +4,21 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import type { Liff } from '@line/liff';
 
+declare global {
+  interface Window {
+    liff: {
+      init: (config: { liffId: string }) => Promise<void>;
+      isLoggedIn: () => boolean;
+      getProfile: () => Promise<Profile>;
+      getAccessToken: () => string;
+      login: () => void;
+      logout: () => void;
+      isInClient: () => boolean;
+      sendMessages: (messages: { type: string; text: string }[]) => Promise<void>;
+    };
+  }
+}
+
 type Profile = NonNullable<Awaited<ReturnType<Liff['getProfile']>>>;
 
 interface DatabaseUser {
@@ -199,10 +214,10 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initializeLiff();
-  }, [liffId]);
+  }, [liffId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = () => {
-    const liff = (window as any).liff;
+    const liff = window.liff;
     if (liff && !liff.isLoggedIn()) {
       liff.login();
     }
@@ -214,7 +229,7 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await apiClient.post('/auth/logout');
 
       // Logout จาก LIFF
-      const liff = (window as any).liff;
+      const liff = window.liff;
       if (liff) {
         liff.logout();
       }
@@ -238,7 +253,7 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendMessage = async (message: string) => {
     try {
-      const liff = (window as any).liff;
+      const liff = window.liff;
       if (liff && liff.isInClient()) {
         await liff.sendMessages([
           {

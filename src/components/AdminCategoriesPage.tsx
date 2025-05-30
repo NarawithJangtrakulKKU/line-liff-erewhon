@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Plus, Edit, Trash2, Search, Eye, EyeOff, Upload, X } from 'lucide-react'
 import axios from 'axios'
 import {
@@ -72,10 +73,8 @@ const CategoryForm = React.memo(({
   submitting,
   uploadingImage,
   imagePreview,
-  setImagePreview,
   onImageUpload,
-  onRemoveImage,
-  showNotification
+  onRemoveImage
 }: { 
   formData: CategoryFormData;
   setFormData: React.Dispatch<React.SetStateAction<CategoryFormData>>;
@@ -85,10 +84,8 @@ const CategoryForm = React.memo(({
   submitting: boolean;
   uploadingImage: boolean;
   imagePreview: string | null;
-  setImagePreview: React.Dispatch<React.SetStateAction<string | null>>;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: () => void;
-  showNotification: (type: 'success' | 'error', title: string, message: string) => void;
 }) => {
   const idPrefix = mode;
   
@@ -140,9 +137,11 @@ const CategoryForm = React.memo(({
         {/* Image Preview */}
         {imagePreview && (
           <div className="relative inline-block">
-            <img
+            <Image
               src={imagePreview}
               alt="Category preview"
+              width={128}
+              height={128}
               className="w-32 h-32 object-cover rounded-lg border"
             />
             <Button
@@ -560,10 +559,8 @@ export default function AdminCategoriesPage() {
                       submitting={submitting}
                       uploadingImage={uploadingImage}
                       imagePreview={imagePreview}
-                      setImagePreview={setImagePreview}
                       onImageUpload={handleImageUpload}
                       onRemoveImage={handleRemoveImage}
-                      showNotification={showNotification}
                     />
                   </DialogContent>
                 </Dialog>
@@ -617,9 +614,11 @@ export default function AdminCategoriesPage() {
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                               {category.imageUrl && (
-                                <img
+                                <Image
                                   src={category.imageUrl}
                                   alt={category.name}
+                                  width={40}
+                                  height={40}
                                   className="w-10 h-10 rounded-lg object-cover"
                                 />
                               )}
@@ -684,7 +683,7 @@ export default function AdminCategoriesPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete Category</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete "{category.name}"? This action cannot be undone.
+                                      Are you sure you want to delete &quot;{category.name}&quot;? This action cannot be undone.
                                       {category._count?.products && category._count.products > 0 && (
                                         <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
                                           <strong>Warning:</strong> This category has {category._count.products} product(s) associated with it.
@@ -732,10 +731,8 @@ export default function AdminCategoriesPage() {
                 submitting={submitting}
                 uploadingImage={uploadingImage}
                 imagePreview={imagePreview}
-                setImagePreview={setImagePreview}
                 onImageUpload={handleImageUpload}
                 onRemoveImage={handleRemoveImage}
-                showNotification={showNotification}
               />
             </DialogContent>
           </Dialog>

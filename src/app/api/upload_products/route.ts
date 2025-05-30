@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       name,
       price,
       image: imagePath,
-      categoryId: 'YOUR_CATEGORY_ID_HERE', // ❗ใช้ ID จริงจาก DB หรือแก้ให้ connect กับหมวด
+      categoryId: category,
     },
   });
 
