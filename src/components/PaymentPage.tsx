@@ -2,19 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useLiff } from '@/app/contexts/LiffContext'
 import { 
   ArrowLeft,
-  QrCode,
   Upload,
   Camera,
-  Check,
   X,
-  Clock,
   AlertCircle,
-  CreditCard,
-  Smartphone,
-  Building2,
   FileImage,
   Eye,
   Download,
@@ -28,7 +23,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -36,7 +30,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Alert,
@@ -428,9 +421,11 @@ export default function PaymentPage({ orderId }: PaymentPageProps) {
                 {orderDetails.orderItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
                     {item.product.images && item.product.images.length > 0 && (
-                      <img
+                      <Image
                         src={item.product.images[0].imageUrl}
                         alt={item.product.name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 object-cover rounded-lg border"
                       />
                     )}
@@ -499,9 +494,11 @@ export default function PaymentPage({ orderId }: PaymentPageProps) {
           <CardContent className="p-8">
             <div className="flex flex-col items-center">
               <div className="bg-white p-4 rounded-2xl shadow-md mb-6">
-                <img
+                <Image
                   src="/images/qrcodepropmtpay/narawith_qrcode.jpeg"
                   alt="QR Code for payment"
+                  width={256}
+                  height={256}
                   className="w-64 h-64 object-contain rounded-lg"
                 />
               </div>
@@ -587,6 +584,7 @@ export default function PaymentPage({ orderId }: PaymentPageProps) {
               /* Image Preview */
               <div className="space-y-4">
                 <div className="relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={slipPreview}
                     alt="Payment slip preview"
@@ -668,6 +666,7 @@ export default function PaymentPage({ orderId }: PaymentPageProps) {
             {slipPreview && (
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-xl p-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={slipPreview}
                     alt="Payment slip full view"

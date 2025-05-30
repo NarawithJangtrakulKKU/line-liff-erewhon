@@ -16,13 +16,14 @@ import {
   Truck,
   Phone,
   MessageCircle,
-  ArrowRight,
+  User,
   Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import Image from 'next/image'
 // Temporarily comment out confetti until package is installed
 // import confetti from 'canvas-confetti'
 
@@ -341,11 +342,18 @@ export default function PaymentSuccess() {
           <CardContent className="p-8">
             {/* Customer Info */}
             <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
-              <img
-                src={profile.pictureUrl || '/api/placeholder/48/48'}
-                alt="Profile"
-                className="w-12 h-12 rounded-full border-2 border-green-200"
-              />
+              <div className="relative">
+                <Image
+                  src={profile?.pictureUrl || '/api/placeholder/60/60'}
+                  alt="Profile"
+                  width={60}
+                  height={60}
+                  className="w-15 h-15 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3 text-white" />
+                </div>
+              </div>
               <div>
                 <div className="font-semibold text-gray-900">
                   สวัสดี คุณ{profile.displayName}! 👋
@@ -455,9 +463,11 @@ export default function PaymentSuccess() {
               <div className="space-y-3">
                 {order.orderItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                    <img
+                    <Image
                       src={item.product.images[0]?.imageUrl || '/api/placeholder/60/60'}
                       alt={item.product.name}
+                      width={60}
+                      height={60}
                       className="w-15 h-15 object-cover rounded-md"
                     />
                     <div className="flex-1">
