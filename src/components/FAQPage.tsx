@@ -18,7 +18,11 @@ export default function FAQPage() {
 
     const toggleItem = (id: string) => {
         const newExpanded = new Set(expandedItems);
-        newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+        if (newExpanded.has(id)) {
+            newExpanded.delete(id);
+        } else {
+            newExpanded.add(id);
+        }
         setExpandedItems(newExpanded);
     };
 
@@ -79,13 +83,13 @@ export default function FAQPage() {
         {
             id: 'cancel-order',
             question: 'Can I cancel an online order?',
-            answer: 'All orders placed through the Erewhon app and website are final. Please don’t hesitate to drop a note to our team with any issues so we can best support you.',
+            answer: 'All orders placed through the Erewhon app and website are final. Please don\'t hesitate to drop a note to our team with any issues so we can best support you.',
             links: [{ text: 'Contact Us', url: '/contact' }]
         },
         {
             id: 'modify-order',
             question: 'Can I modify my online order?',
-            answer: 'To modify an order, reply to the SMS text that you receive from our team and we’ll be happy to assist. Note that an SMS thread is automatically started once your order begins preparation.',
+            answer: 'To modify an order, reply to the SMS text that you receive from our team and we\'ll be happy to assist. Note that an SMS thread is automatically started once your order begins preparation.',
             links: [{ text: 'Contact Us', url: '/contact' }]
         },
         {
@@ -107,10 +111,11 @@ export default function FAQPage() {
             answer: 'If you are not pleased with your purchase, please return your unopened item with the receipt within 14 days (72 hours for perishable items). Non-Members must return to the market where the item was purchased; Members can return items to any market. Special orders, discontinued items, and opened items are non-refundable. All face masks are non-refundable unless they are defective. Erewhon bottle returns totaling over $10 will be paid via gift card.'
         },
         {
-            id:'return my' ,
-            question:'How do I return my Erewhon bottles/jars?' ,
-            answer: 'You can return cleaned Erewhon bottles and jars to any Erewhon location. Erewhon bottle returns totaling over $10 will be paid via gift card.' ,
-        }]
+            id: 'return my',
+            question: 'How do I return my Erewhon bottles/jars?',
+            answer: 'You can return cleaned Erewhon bottles and jars to any Erewhon location. Erewhon bottle returns totaling over $10 will be paid via gift card.'
+        }
+    ];
 
     const FAQAccordionItem: React.FC<{ item: FAQItem }> = ({ item }) => {
         const isExpanded = expandedItems.has(item.id);

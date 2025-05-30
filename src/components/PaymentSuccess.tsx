@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
 import axios from 'axios'
@@ -16,7 +17,6 @@ import {
   Truck,
   Phone,
   MessageCircle,
-  ArrowRight,
   Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -341,9 +341,11 @@ export default function PaymentSuccess() {
           <CardContent className="p-8">
             {/* Customer Info */}
             <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
-              <img
+              <Image
                 src={profile.pictureUrl || '/api/placeholder/48/48'}
                 alt="Profile"
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full border-2 border-green-200"
               />
               <div>
@@ -455,9 +457,11 @@ export default function PaymentSuccess() {
               <div className="space-y-3">
                 {order.orderItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                    <img
+                    <Image
                       src={item.product.images[0]?.imageUrl || '/api/placeholder/60/60'}
                       alt={item.product.name}
+                      width={60}
+                      height={60}
                       className="w-15 h-15 object-cover rounded-md"
                     />
                     <div className="flex-1">

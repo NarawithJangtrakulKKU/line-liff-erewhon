@@ -2,15 +2,17 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
-    responseLimit: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'profile.line-scdn.net',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['prisma'],
-  },
+  serverExternalPackages: ['prisma'],
 };
 
 export default nextConfig;

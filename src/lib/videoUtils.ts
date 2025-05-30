@@ -35,8 +35,7 @@ export async function generateVideoThumbnail(
   const {
     timeOffset = 1, // Capture at 1 second by default
     width = 320,
-    height = 240,
-    quality = 80
+    height = 240
   } = options
 
   return new Promise((resolve, reject) => {

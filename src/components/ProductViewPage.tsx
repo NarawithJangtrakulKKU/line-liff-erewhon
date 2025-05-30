@@ -1,5 +1,6 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useLiff } from '@/app/contexts/LiffContext';
@@ -133,7 +134,7 @@ interface ProductViewPageProps {
 
 export default function ProductViewPage({ productId }: ProductViewPageProps) {
   const router = useRouter();
-  const { dbUser, isLoggedIn } = useLiff();
+  const { dbUser, isLoggedIn, isInitialized } = useLiff();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
@@ -201,11 +202,16 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // แก้ไขฟังก์ชัน addToCart
+  // เพิ่มสินค้าลงตะกร้า
   const addToCart = async () => {
-    if (!product || !dbUser) {
-      if (!isLoggedIn) {
-        showNotification('error', 'กรุณาเข้าสู่ระบบเพื่อเพิ่มสินค้าลงตะกร้า');
+    if (!product) {
+      showNotification('error', 'ไม่พบข้อมูลสินค้า');
+      return;
+    }
+
+    if (!dbUser) {
+      if (isInitialized && !isLoggedIn) {
+        showNotification('error', 'กรุณาล็อกอินก่อนเพิ่มสินค้าลงตะกร้า');
         return;
       }
       showNotification('error', 'ไม่พบข้อมูลผู้ใช้');
@@ -215,7 +221,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
     try {
       setAddingToCart(true);
       
-      const response = await axios.post('/api/cart', {
+      await axios.post('/api/cart', {
         productId: product.id,
         quantity: quantity,
         userId: dbUser.id
@@ -315,7 +321,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
   };
 
   // ฟังก์ชันสำหรับเปลี่ยน media ใน modal
-  const navigateMedia = (direction: 'prev' | 'next') => {
+  const navigateMedia = useCallback((direction: 'prev' | 'next') => {
     if (modalMediaList.length === 0) return;
     
     let newIndex;
@@ -327,7 +333,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
     
     setCurrentMediaIndex(newIndex);
     setSelectedMedia(modalMediaList[newIndex]);
-  };
+  }, [currentMediaIndex, modalMediaList]);
 
   // ฟังก์ชันสำหรับจัดการการกด keyboard
   useEffect(() => {
@@ -349,7 +355,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [isModalOpen, currentMediaIndex, modalMediaList]);
+  }, [isModalOpen, navigateMedia]);
 
   // แก้ไขฟังก์ชัน shareProduct
   const shareProduct = async () => {
@@ -483,12 +489,13 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
           {/* Product Images */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm aspect-square flex items-center justify-center">
+            <div className="bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm aspect-square flex items-center justify-center relative">
               {mainImage ? (
-                <img
+                <Image
                   src={mainImage}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400">
@@ -509,9 +516,11 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                       selectedImageIndex === index ? 'border-orange-500' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <img
+                    <Image
                       src={image.imageUrl}
                       alt={image.altText || `${product.name} image ${index + 1}`}
+                      width={80}
+                      height={80}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -752,9 +761,11 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                       {/* User Avatar */}
                       <div className="flex-shrink-0">
                         {review.user.pictureUrl ? (
-                          <img
+                          <Image
                             src={review.user.pictureUrl}
                             alt={review.user.displayName || 'User'}
+                            width={40}
+                            height={40}
                             className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                           />
                         ) : (
@@ -798,10 +809,11 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                                     className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 group cursor-pointer hover:shadow-md transition-shadow"
                                   >
                                     {media.mediaType === MediaType.IMAGE ? (
-                                      <img
+                                      <Image
                                         src={media.mediaUrl}
                                         alt={media.altText || 'Review image'}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-200"
                                         onClick={() => openMediaModal(media, review.mediaFiles)}
                                       />
                                     ) : (
@@ -810,10 +822,11 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                                         onClick={() => openMediaModal(media, review.mediaFiles)}
                                       >
                                         {media.thumbnailUrl ? (
-                                          <img
+                                          <Image
                                             src={media.thumbnailUrl}
                                             alt={media.altText || 'Video thumbnail'}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            className="object-cover"
                                           />
                                         ) : (
                                           <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -876,10 +889,11 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                 <Card key={relatedProduct.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
                   <div className="relative h-48 bg-gray-100 overflow-hidden">
                     {relatedProduct.image ? (
-                      <img
+                      <Image
                         src={relatedProduct.image}
                         alt={relatedProduct.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
@@ -957,11 +971,14 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
             {/* Media Content */}
             <div className="flex-1 bg-black rounded-b-lg overflow-hidden relative flex items-center justify-center">
               {selectedMedia.mediaType === MediaType.IMAGE ? (
-                <img
-                  src={selectedMedia.mediaUrl}
-                  alt={selectedMedia.altText || 'Review image'}
-                  className="max-w-full max-h-full object-contain"
-                />
+                <div className="relative w-full h-full max-w-full max-h-full">
+                  <Image
+                    src={selectedMedia.mediaUrl}
+                    alt={selectedMedia.altText || 'Review image'}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
               ) : (
                 <video
                   src={selectedMedia.mediaUrl}
@@ -1030,18 +1047,21 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                       }`}
                     >
                       {media.mediaType === MediaType.IMAGE ? (
-                        <img
+                        <Image
                           src={media.mediaUrl}
                           alt={`Thumbnail ${index + 1}`}
+                          width={48}
+                          height={48}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-600 flex items-center justify-center">
                           {media.thumbnailUrl ? (
-                            <img
+                            <Image
                               src={media.thumbnailUrl}
                               alt={`Video thumbnail ${index + 1}`}
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           ) : (
                             <Play className="h-4 w-4 text-white" />

@@ -70,12 +70,11 @@ async function deleteImageFiles(imageUrls: string[]) {
 // GET - Fetch single product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params before destructuring
-    const resolvedParams = await Promise.resolve(params);
-    const { id } = resolvedParams;
+    const { id } = await params;
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -118,12 +117,11 @@ export async function GET(
 // PUT - Update product with file upload
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params before destructuring
-    const resolvedParams = await Promise.resolve(params);
-    const { id } = resolvedParams;
+    const { id } = await params;
     
     const formData = await request.formData()
     
@@ -315,12 +313,11 @@ export async function PUT(
 // DELETE - Delete product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params before destructuring
-    const resolvedParams = await Promise.resolve(params);
-    const { id } = resolvedParams;
+    const { id } = await params;
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({

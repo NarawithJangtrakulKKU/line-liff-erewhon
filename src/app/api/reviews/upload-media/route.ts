@@ -1,9 +1,9 @@
 // /api/reviews/upload-media/route.ts (Enhanced Version)
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import { existsSync } from 'fs'
-import { generateVideoThumbnail, getVideoInfo, validateVideo } from '@/lib/videoUtils'
+import { generateVideoThumbnail, validateVideo } from '@/lib/videoUtils'
 import sharp from 'sharp'
 
 // Supported file types
@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const type = formData.get('type') as string // 'image' or 'video'
 
     if (!file) {
       return NextResponse.json(
@@ -80,7 +79,7 @@ export async function POST(request: NextRequest) {
     const fileUrl = `/uploads/reviews/${mediaType}/${fileName}`
     let thumbnailUrl = null
     let duration = null
-    let dimensions = { width: 0, height: 0 }
+    const dimensions = { width: 0, height: 0 }
 
     if (isImage) {
       try {
@@ -117,8 +116,7 @@ export async function POST(request: NextRequest) {
         
         if (!validation.valid) {
           // Delete uploaded file
-          const fs = require('fs').promises
-          await fs.unlink(filePath).catch(() => {})
+          await unlink(filePath).catch(() => {})
           
           return NextResponse.json(
             { 
@@ -156,8 +154,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Error processing video:', error)
         // Delete uploaded file
-        const fs = require('fs').promises
-        await fs.unlink(filePath).catch(() => {})
+        await unlink(filePath).catch(() => {})
         
         return NextResponse.json(
           { 
@@ -211,7 +208,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const fs = require('fs').promises
+    const fs = await import('fs/promises')
     const filesToDelete = [fileUrl]
     
     if (thumbnailUrl && thumbnailUrl !== '/images/video-placeholder.jpg') {

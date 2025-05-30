@@ -215,7 +215,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { type, dateFrom, dateTo, limit = 10 } = body
 
-    const whereClause: any = {}
+    interface WhereClause {
+      createdAt?: {
+        gte: Date
+        lte: Date
+      }
+    }
+
+    const whereClause: WhereClause = {}
     
     if (dateFrom && dateTo) {
       whereClause.createdAt = {

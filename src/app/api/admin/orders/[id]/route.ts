@@ -1,16 +1,28 @@
 // app/api/admin/orders/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, OrderStatus, PaymentStatus, PaymentMethod, ShippingMethod } from '@prisma/client'
 
 const prisma = new PrismaClient()
+
+interface OrderUpdateData {
+  status?: OrderStatus
+  paymentStatus?: PaymentStatus
+  paymentMethod?: PaymentMethod | null
+  shippingMethod?: ShippingMethod | null
+  trackingNumber?: string | null
+  notes?: string | null
+  shippedAt?: Date
+  deliveredAt?: Date
+  updatedAt?: Date
+}
 
 // GET /api/admin/orders/[id] - ดึงข้อมูลออเดอร์เฉพาะ
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -95,10 +107,10 @@ export async function GET(
 // PUT /api/admin/orders/[id] - อัปเดตออเดอร์
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { 
       status, 
@@ -122,7 +134,7 @@ export async function PUT(
     }
 
     // อัปเดตข้อมูลออเดอร์
-    const updateData: any = {}
+    const updateData: OrderUpdateData = {}
     
     if (status) updateData.status = status
     if (paymentStatus) updateData.paymentStatus = paymentStatus
@@ -220,10 +232,10 @@ export async function PUT(
 // DELETE /api/admin/orders/[id] - ลบออเดอร์
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // ตรวจสอบว่าออเดอร์มีอยู่จริง
     const existingOrder = await prisma.order.findUnique({
