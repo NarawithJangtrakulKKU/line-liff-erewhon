@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient, PaymentMethod, ShippingMethod } from '@prisma/client'
 
+interface OrderItem {
+  productId: string
+  quantity: number
+  price: number
+}
+
 const prisma = new PrismaClient()
 
 export async function POST(req: NextRequest) {
@@ -57,7 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify that all products exist and have sufficient stock
-    const productIds = data.items.map((item: any) => item.productId)
+    const productIds = data.items.map((item: OrderItem) => item.productId)
     const products = await prisma.product.findMany({
       where: {
         id: { in: productIds },
@@ -102,7 +108,7 @@ export async function POST(req: NextRequest) {
           total: data.summary.total,
           notes: data.notes || null,
           orderItems: {
-            create: data.items.map((item: any) => ({
+            create: data.items.map((item: OrderItem) => ({
               productId: item.productId,
               quantity: item.quantity,
               price: item.price,

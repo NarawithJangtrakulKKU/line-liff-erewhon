@@ -1,6 +1,6 @@
 // app/api/admin/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma, OrderStatus } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // สร้าง where condition
-    const whereCondition: any = {}
+    const whereCondition: Prisma.OrderWhereInput = {}
     
     if (status && status !== 'ALL') {
-      whereCondition.status = status
+      whereCondition.status = status as OrderStatus
     }
     
     if (search) {

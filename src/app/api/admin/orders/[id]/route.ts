@@ -1,6 +1,6 @@
 // app/api/admin/orders/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -122,7 +122,7 @@ export async function PUT(
     }
 
     // อัปเดตข้อมูลออเดอร์
-    const updateData: any = {}
+    const updateData: Prisma.OrderUpdateInput = {}
     
     if (status) updateData.status = status
     if (paymentStatus) updateData.paymentStatus = paymentStatus
