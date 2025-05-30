@@ -18,7 +18,11 @@ export default function FAQPage() {
 
     const toggleItem = (id: string) => {
         const newExpanded = new Set(expandedItems);
-        newExpanded.has(id) ? newExpanded.delete(id) : newExpanded.add(id);
+        if (newExpanded.has(id)) {
+            newExpanded.delete(id);
+        } else {
+            newExpanded.add(id);
+        }
         setExpandedItems(newExpanded);
     };
 
@@ -79,13 +83,13 @@ export default function FAQPage() {
         {
             id: 'cancel-order',
             question: 'Can I cancel an online order?',
-            answer: 'All orders placed through the Erewhon app and website are final. Please don’t hesitate to drop a note to our team with any issues so we can best support you.',
+            answer: 'All orders placed through the Erewhon app and website are final. Please don&apos;t hesitate to drop a note to our team with any issues so we can best support you.',
             links: [{ text: 'Contact Us', url: '/contact' }]
         },
         {
             id: 'modify-order',
             question: 'Can I modify my online order?',
-            answer: 'To modify an order, reply to the SMS text that you receive from our team and we’ll be happy to assist. Note that an SMS thread is automatically started once your order begins preparation.',
+            answer: 'To modify an order, reply to the SMS text that you receive from our team and we&apos;ll be happy to assist. Note that an SMS thread is automatically started once your order begins preparation.',
             links: [{ text: 'Contact Us', url: '/contact' }]
         },
         {
@@ -107,10 +111,11 @@ export default function FAQPage() {
             answer: 'If you are not pleased with your purchase, please return your unopened item with the receipt within 14 days (72 hours for perishable items). Non-Members must return to the market where the item was purchased; Members can return items to any market. Special orders, discontinued items, and opened items are non-refundable. All face masks are non-refundable unless they are defective. Erewhon bottle returns totaling over $10 will be paid via gift card.'
         },
         {
-            id:'return my' ,
-            question:'How do I return my Erewhon bottles/jars?' ,
-            answer: 'You can return cleaned Erewhon bottles and jars to any Erewhon location. Erewhon bottle returns totaling over $10 will be paid via gift card.' ,
-        }]
+            id: 'return my',
+            question: 'How do I return my Erewhon bottles/jars?',
+            answer: 'You can return cleaned Erewhon bottles and jars to any Erewhon location. Erewhon bottle returns totaling over $10 will be paid via gift card.'
+        }
+    ];
 
     const FAQAccordionItem: React.FC<{ item: FAQItem }> = ({ item }) => {
         const isExpanded = expandedItems.has(item.id);
@@ -209,7 +214,7 @@ export default function FAQPage() {
                     aria-label="Accessibility options"
                 >
                     <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 5.5C14.8 5.5 14.6 5.4 14.5 5.3L13.5 4.7C13.1 4.3 12.6 4.1 12.1 4.1C11.2 4.1 10.5 4.7 10.5 5.6V10.5L8.5 10L8 12L10.5 12.5V22H12.5V16H13.5V22H15.5V12.5L18 13V11L15.5 10.5V9C15.5 8.2 14.8 7.5 14 7.5H12C11.2 7.5 10.5 8.2 10.5 9V10.5L8.5 10L8 12L10.5 12.5V22H12.5V16H13.5V22H15.5V12.5L18 13V11L21 9Z" />
+                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 5.5C14.8 5.5 14.6 5.4 14.5 5.3L13.5 4.7C13.1 4.3 12.6 4.1 12.1 4.1C11.2 4.1 10.5 4.7 10.5 5.6V10.5L8.5 10L8 12L10.5 12.5V22H12.5V16H13.5V22H15.5V12.5L18 13V11L21 9Z" />
                     </svg>
                 </button>
             </div>

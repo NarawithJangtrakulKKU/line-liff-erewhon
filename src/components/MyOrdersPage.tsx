@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import axios from 'axios'
 import { 
-  ShoppingBag, 
-  ChevronRight, 
   Calendar, 
   Package, 
   Truck,
@@ -40,7 +39,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -246,11 +245,13 @@ export default function MyOrdersPage() {
       } else {
         throw new Error(response.data.error || 'Failed to cancel order')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error cancelling order:', error)
       
       // Show specific error message
-      const errorMessage = error.response?.data?.error || error.message || 'ไม่สามารถยกเลิกคำสั่งซื้อได้'
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'ไม่สามารถยกเลิกคำสั่งซื้อได้'
       setErrorMessage(errorMessage)
       setShowErrorModal(true)
     } finally {
@@ -501,10 +502,12 @@ export default function MyOrdersPage() {
                             {order.orderItems.slice(0, 2).map((item) => (
                               <div key={item.id} className="flex items-center gap-3 text-sm">
                                 {item.product.imageUrl && (
-                                  <img
+                                  <Image
                                     src={item.product.imageUrl}
                                     alt={item.product.name}
-                                    className="w-8 h-8 rounded object-cover"
+                                    width={64}
+                                    height={64}
+                                    className="w-16 h-16 rounded-lg object-cover"
                                   />
                                 )}
                                 <span className="flex-1">{item.product.name}</span>
@@ -801,9 +804,11 @@ export default function MyOrdersPage() {
                       {selectedOrder.orderItems.map((item) => (
                         <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                           {item.product.imageUrl && (
-                            <img
+                            <Image
                               src={item.product.imageUrl}
                               alt={item.product.name}
+                              width={64}
+                              height={64}
                               className="w-16 h-16 rounded-lg object-cover"
                             />
                           )}

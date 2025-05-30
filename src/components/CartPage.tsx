@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
 import { 
@@ -10,14 +11,11 @@ import {
   ShoppingBag, 
   ArrowLeft,
   Heart,
-  Gift,
   Truck,
   CreditCard,
   MapPin
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -80,8 +78,8 @@ export default function CartPage() {
     total: 0,
     itemCount: 0
   })
-  const [promoCode, setPromoCode] = useState('')
-  const [applyingPromo, setApplyingPromo] = useState(false)
+  const [promoCode] = useState('')
+  // const [applyingPromo, setApplyingPromo] = useState(false)
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -192,31 +190,11 @@ export default function CartPage() {
     }
   }, [cartItems])
 
-  // Apply promo code
-  const applyPromoCode = useCallback(async () => {
-    if (!promoCode.trim()) return
-
-    try {
-      setApplyingPromo(true)
-      
-      const response = await axios.post('/api/cart/promo', {
-        code: promoCode,
-        cartTotal: cartSummary.subtotal
-      })
-
-      if (response.data.success) {
-        setCartSummary(prev => ({
-          ...prev,
-          discount: response.data.discount,
-          total: prev.subtotal + prev.shipping + prev.tax - response.data.discount
-        }))
-      }
-    } catch (error) {
-      console.error('Error applying promo code:', error)
-    } finally {
-      setApplyingPromo(false)
-    }
-  }, [promoCode, cartSummary.subtotal])
+  // Apply promo code - commented out as not currently used
+  // const applyPromoCode = useCallback(async () => {
+  //   if (!promoCode.trim()) return
+  //   // Implementation would go here
+  // }, [promoCode])
 
   // Handle checkout
   const handleCheckout = () => {
@@ -422,9 +400,11 @@ export default function CartPage() {
                         {/* Product Image */}
                         <div className="flex-shrink-0">
                           {(item.product?.image || item.product?.imageUrl) ? (
-                            <img
+                            <Image
                               src={item.product.image || item.product.imageUrl || ''}
                               alt={item.product.name}
+                              width={80}
+                              height={80}
                               className="w-20 h-20 object-cover rounded-lg"
                             />
                           ) : (
@@ -466,7 +446,7 @@ export default function CartPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>ลบสินค้าออกจากตะกร้า</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      คุณต้องการลบ "{item.product?.name || 'สินค้านี้ถูกลบ'}" ออกจากตะกร้าหรือไม่?
+                                      คุณต้องการลบ &quot;{item.product?.name || 'สินค้านี้ถูกลบ'}&quot; ออกจากตะกร้าหรือไม่?
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>

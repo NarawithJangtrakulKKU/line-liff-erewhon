@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import axios from 'axios';
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -93,9 +94,11 @@ export default function CategoriesPage({ categoryId }: CategoriesPageProps) {
 
             {/* Product Image - Responsive aspect ratio */}
             <div className="bg-gray-200 rounded-lg sm:rounded-xl h-28 xs:h-32 sm:h-36 md:h-40 lg:h-44 mb-2 sm:mb-3 flex items-center justify-center relative overflow-hidden group">
-                <img 
+                <Image 
                     src={product.images[0]?.imageUrl || '/images/placeholder.png'} 
                     alt={product.name}
+                    width={200}
+                    height={200}
                     className="w-full h-full object-cover rounded-lg sm:rounded-xl transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
 import { 
@@ -9,14 +9,11 @@ import {
   Truck,
   CreditCard,
   Smartphone,
-  Building2,
-  Banknote,
   ShieldCheck,
   Clock,
   Package,
   User,
   Phone,
-  Edit,
   Plus,
   Check,
   X
@@ -43,13 +40,13 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import axios from 'axios'
+import Image from 'next/image'
 
 interface CartItem {
   id: string
@@ -148,7 +145,7 @@ export default function CheckoutPage() {
   const [notification, setNotification] = useState<Notification | null>(null)
 
   // Shipping methods
-  const shippingMethods: ShippingMethod[] = [
+  const shippingMethods: ShippingMethod[] = useMemo(() => [
     {
       id: 'TH_POST',
       name: 'จัดส่งมาตรฐาน',
@@ -165,10 +162,10 @@ export default function CheckoutPage() {
       estimatedDays: '1-2 วัน',
       icon: <Truck className="h-5 w-5" />
     }
-  ]
+  ], [])
 
   // Payment methods
-  const paymentMethods: PaymentMethod[] = [
+  const paymentMethods: PaymentMethod[] = useMemo(() => [
     {
       id: 'PROMPTPAY',
       name: 'พร้อมเพย์',
@@ -197,7 +194,7 @@ export default function CheckoutPage() {
     //   icon: <Banknote className="h-5 w-5" />,
     //   fee: 20
     // }
-  ]
+  ], [])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -206,18 +203,29 @@ export default function CheckoutPage() {
     }
   }, [isInitialized, isLoggedIn, router])
 
-  // Fetch data
-  useEffect(() => {
-    if (dbUser?.id) {
-      fetchCartItems()
-      fetchAddresses()
-    }
-  }, [dbUser])
+  // Calculate cart summary
+  const calculateSummary = useCallback(() => {
+    const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+    const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+    
+    const selectedShippingMethod = shippingMethods.find(method => method.id === selectedShipping)
+    const shipping = selectedShippingMethod?.price || 0
+    
+    const selectedPaymentMethod = paymentMethods.find(method => method.id === selectedPayment)
+    const paymentFee = selectedPaymentMethod?.fee || 0
+    
+    const tax = subtotal * 0.07 // 7% VAT
+    const total = subtotal + shipping + paymentFee + tax
 
-  // Calculate summary when dependencies change
-  useEffect(() => {
-    calculateSummary()
-  }, [cartItems, selectedShipping, selectedPayment])
+    setCartSummary({
+      subtotal,
+      shipping,
+      paymentFee,
+      tax,
+      total,
+      itemCount
+    })
+  }, [cartItems, selectedShipping, selectedPayment, shippingMethods, paymentMethods])
 
   // Fetch cart items
   const fetchCartItems = useCallback(async () => {
@@ -260,29 +268,18 @@ export default function CheckoutPage() {
     }
   }, [dbUser])
 
-  // Calculate cart summary
-  const calculateSummary = () => {
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
-    const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
-    
-    const selectedShippingMethod = shippingMethods.find(method => method.id === selectedShipping)
-    const shipping = selectedShippingMethod?.price || 0
-    
-    const selectedPaymentMethod = paymentMethods.find(method => method.id === selectedPayment)
-    const paymentFee = selectedPaymentMethod?.fee || 0
-    
-    const tax = subtotal * 0.07 // 7% VAT
-    const total = subtotal + shipping + paymentFee + tax
+  // Fetch data
+  useEffect(() => {
+    if (dbUser?.id) {
+      fetchCartItems()
+      fetchAddresses()
+    }
+  }, [dbUser, fetchCartItems, fetchAddresses])
 
-    setCartSummary({
-      subtotal,
-      shipping,
-      paymentFee,
-      tax,
-      total,
-      itemCount
-    })
-  }
+  // Calculate summary when dependencies change
+  useEffect(() => {
+    calculateSummary()
+  }, [calculateSummary])
 
   // Add new address
   const handleAddAddress = async () => {
@@ -507,9 +504,11 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <img
+                  <Image
                     src={profile.pictureUrl || '/api/placeholder/48/48'}
                     alt="Profile"
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-full"
                   />
                   <div>
@@ -778,9 +777,11 @@ export default function CheckoutPage() {
                     <div key={item.id} className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
                         {(item.product.image || item.product.imageUrl) ? (
-                          <img
+                          <Image
                             src={item.product.image || item.product.imageUrl || ''}
                             alt={item.product.name}
+                            width={48}
+                            height={48}
                             className="w-full h-full object-cover"
                           />
                         ) : (

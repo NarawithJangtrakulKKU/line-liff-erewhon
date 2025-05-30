@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Search, ShoppingBag, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface Category {
     id: string
@@ -21,6 +22,15 @@ interface HotBarItem {
     comparePrice?: number | null
     image: string
     badge?: string
+}
+
+interface Product {
+    id: string
+    name: string
+    description: string | null
+    price: number
+    comparePrice?: number | null
+    images?: { imageUrl: string }[]
 }
 
 interface FeaturedSection {
@@ -130,7 +140,7 @@ export default function HomePage() {
             try {
                 const response = await axios.get('/api/products/featured')
                 if (response.data.success && response.data.products) {
-                    const formattedProducts = response.data.products.map((product: any) => ({
+                    const formattedProducts = response.data.products.map((product: Product) => ({
                         id: product.id,
                         name: product.name,
                         description: product.description,
@@ -157,7 +167,7 @@ export default function HomePage() {
             try {
                 const response = await axios.get('/api/products/newest')
                 if (response.data.success && response.data.products) {
-                    const formattedProducts = response.data.products.map((product: any) => ({
+                    const formattedProducts = response.data.products.map((product: Product) => ({
                         id: product.id,
                         name: product.name,
                         description: product.description,
@@ -184,7 +194,7 @@ export default function HomePage() {
             try {
                 const response = await axios.get('/api/products')
                 if (response.data.success && response.data.products) {
-                    const formattedProducts = response.data.products.map((product: any) => ({
+                    const formattedProducts = response.data.products.map((product: Product) => ({
                         id: product.id,
                         name: product.name,
                         description: product.description,
@@ -248,7 +258,7 @@ export default function HomePage() {
     useEffect(() => {
         const interval = setInterval(nextSlide, 5000)
         return () => clearInterval(interval)
-    }, [])
+    }, [nextSlide])
 
     // Product Card Component
     const ProductCard = ({ item }: { item: HotBarItem }) => (
@@ -256,9 +266,11 @@ export default function HomePage() {
             <div className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
                 <Link href={`/products/${item.id}`}>
                 <div className="relative">
-                    <img
+                    <Image
                         src={item.image}
                         alt={item.name}
+                        width={400}
+                        height={300}
                         className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform"
                     />
                     {item.badge && (
@@ -338,9 +350,11 @@ export default function HomePage() {
                   <div key={category.id} className="flex-none w-24 sm:w-28 md:w-32 text-center group cursor-pointer">
                     <Link href={`/allcategories/${category.id}`}>
                     <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 mx-auto mb-2 sm:mb-3 rounded-2xl overflow-hidden bg-gray-100 group-hover:scale-105 transition-transform">
-                      <img
+                      <Image
                         src={category.imageUrl || '/api/placeholder/120/120'}
                         alt={category.name}
+                        width={120}
+                        height={120}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -384,9 +398,11 @@ export default function HomePage() {
                                                   </button>
                                       </div>
                                       <div className="w-full md:w-1/2">
-                                          <img
+                                          <Image
                                               src={section.image}
                                               alt={section.title}
+                                              width={600}
+                                              height={400}
                                               className="w-full h-48 sm:h-64 md:h-80 object-cover"
                                           />
                                       </div>
