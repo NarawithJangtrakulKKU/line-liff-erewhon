@@ -8,10 +8,8 @@ import {
   Package, 
   Tag, 
   Users, 
-  Settings, 
   LogOut,
   Menu,
-  TruckElectric,
   X,
   ChartPie
 } from 'lucide-react';
