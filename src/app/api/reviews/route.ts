@@ -7,16 +7,6 @@ import { join } from 'path'
 
 const prisma = new PrismaClient()
 
-interface MediaFile {
-  mediaType: 'IMAGE' | 'VIDEO'
-  mediaUrl: string
-  thumbnailUrl?: string | null
-  fileName?: string | null
-  fileSize?: number | null
-  duration?: number | null
-  altText?: string | null
-}
-
 // Validation schema
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createReviewSchema = z.object({

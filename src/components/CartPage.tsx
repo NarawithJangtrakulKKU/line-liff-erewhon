@@ -78,7 +78,7 @@ export default function CartPage() {
     total: 0,
     itemCount: 0
   })
-  const [promoCode] = useState('')
+  // const [promoCode] = useState('')
   // const [applyingPromo, setApplyingPromo] = useState(false)
 
   // Redirect to login if not authenticated

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
@@ -214,9 +214,9 @@ export default function HomePage() {
         fetchAllProducts()
     }, [])
 
-    const nextSlide = () => {
+    const nextSlide = useCallback(() => {
         setCurrentSlide((prev) => (prev + 1) % featuredSections.length)
-    }
+    }, [featuredSections.length])
 
     const prevSlide = () => {
         setCurrentSlide((prev) => (prev - 1 + featuredSections.length) % featuredSections.length)

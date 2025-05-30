@@ -7,10 +7,10 @@ const prisma = new PrismaClient()
 // GET /api/admin/orders/[id] - ดึงข้อมูลออเดอร์เฉพาะ
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -95,10 +95,10 @@ export async function GET(
 // PUT /api/admin/orders/[id] - อัปเดตออเดอร์
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { 
       status, 
@@ -220,10 +220,10 @@ export async function PUT(
 // DELETE /api/admin/orders/[id] - ลบออเดอร์
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // ตรวจสอบว่าออเดอร์มีอยู่จริง
     const existingOrder = await prisma.order.findUnique({

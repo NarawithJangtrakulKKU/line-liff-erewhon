@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import axios from 'axios'
@@ -619,8 +619,6 @@ export default function MyOrdersPage() {
               ) : (
                 <div className="space-y-4">
                   {attentionOrders.map((order) => {
-                    const statusInfo = statusConfig[order.status]
-                    const StatusIcon = statusInfo.icon
                     const paymentInfo = paymentStatusConfig[order.paymentStatus]
 
                     return (
