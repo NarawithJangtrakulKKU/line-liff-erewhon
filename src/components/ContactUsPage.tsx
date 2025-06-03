@@ -50,7 +50,7 @@ export default function ContactUsPage() {
                 <div className="text-center mb-12">
                     <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
                     <p className="text-gray-300">
-                        Couldn't find what you were looking for in our <span className="text-blue-400">FAQs</span>? We're here to help!
+                        Couldn&apos;t find what you were looking for in our <span className="text-blue-400">FAQs</span>? We&apos;re here to help!
                     </p>
                 </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import AdminSidebar from '@/components/AdminSidebar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,9 +14,7 @@ import {
   ShoppingCart, 
   Package, 
   DollarSign,
-  Calendar,
   BarChart3,
-  PieChart,
   Activity,
   AlertCircle,
   CheckCircle,
@@ -24,6 +22,7 @@ import {
   Truck,
   XCircle
 } from 'lucide-react'
+import axios from 'axios'
 
 interface AnalyticsData {
   overview: {
@@ -104,24 +103,13 @@ export default function AdminAnalyticsPage() {
   const [salesPeriod, setSalesPeriod] = useState('month')
   const [activeTab, setActiveTab] = useState('overview')
 
-  useEffect(() => {
-    fetchAnalyticsData()
-  }, [])
-
-  useEffect(() => {
-    if (activeTab === 'sales') {
-      fetchSalesData()
-    }
-  }, [activeTab, salesPeriod])
-
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/analytics/overview')
-      const result = await response.json()
+      const response = await axios.get('/api/admin/analytics/overview')
       
-      if (result.success) {
-        setAnalyticsData(result.data)
+      if (response.data.success) {
+        setAnalyticsData(response.data.data)
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -130,18 +118,27 @@ export default function AdminAnalyticsPage() {
     }
   }
 
-  const fetchSalesData = async () => {
+  const fetchSalesData = useCallback(async () => {
     try {
-      const response = await fetch(`/api/admin/analytics/sales?period=${salesPeriod}`)
-      const result = await response.json()
+      const response = await axios.get(`/api/admin/analytics/sales?period=${salesPeriod}`)
       
-      if (result.success) {
-        setSalesData(result.data)
+      if (response.data.success) {
+        setSalesData(response.data.data)
       }
     } catch (error) {
       console.error('Error fetching sales data:', error)
     }
-  }
+  }, [salesPeriod])
+
+  useEffect(() => {
+    fetchAnalyticsData()
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'sales') {
+      fetchSalesData()
+    }
+  }, [activeTab, salesPeriod, fetchSalesData])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('th-TH', {

@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
+import axios from 'axios'
 import { 
   CheckCircle,
   Home,
@@ -15,7 +17,6 @@ import {
   Truck,
   Phone,
   MessageCircle,
-  ArrowRight,
   Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -106,21 +107,30 @@ export default function PaymentSuccess() {
       }
 
       try {
-        const response = await fetch(`/api/orders?orderId=${orderId}`)
-        const data = await response.json()
+        const response = await axios.get(`/api/orders?orderId=${orderId}`)
 
-        if (data.success && data.order) {
-          setOrder(data.order)
+        if (response.data.success && response.data.order) {
+          setOrder(response.data.order)
           // Update payment status to PAID if it's still PENDING
-          if (data.order.paymentStatus === 'PENDING') {
+          if (response.data.order.paymentStatus === 'PENDING') {
             await updatePaymentStatus(orderId)
           }
         } else {
-          setError(data.error || 'ไม่พบข้อมูลคำสั่งซื้อ')
+          setError(response.data.error || 'ไม่พบข้อมูลคำสั่งซื้อ')
         }
       } catch (error) {
         console.error('Error fetching order:', error)
-        setError('เกิดข้อผิดพลาดในการดึงข้อมูลคำสั่งซื้อ')
+        if (axios.isAxiosError(error)) {
+          if (error.response) {
+            setError(error.response.data?.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลคำสั่งซื้อ')
+          } else if (error.request) {
+            setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้')
+          } else {
+            setError('เกิดข้อผิดพลาดในการดึงข้อมูลคำสั่งซื้อ')
+          }
+        } else {
+          setError('เกิดข้อผิดพลาดในการดึงข้อมูลคำสั่งซื้อ')
+        }
       } finally {
         setLoading(false)
       }
@@ -134,21 +144,12 @@ export default function PaymentSuccess() {
   // Update payment status to PAID
   const updatePaymentStatus = async (orderId: string) => {
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentStatus: 'PAID'
-        })
+      const response = await axios.put(`/api/admin/orders/${orderId}`, {
+        paymentStatus: 'PAID'
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.order) {
-          setOrder(data.order)
-        }
+      if (response.data.success && response.data.order) {
+        setOrder(response.data.order)
       }
     } catch (error) {
       console.error('Error updating payment status:', error)
@@ -340,9 +341,11 @@ export default function PaymentSuccess() {
           <CardContent className="p-8">
             {/* Customer Info */}
             <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
-              <img
+              <Image
                 src={profile.pictureUrl || '/api/placeholder/48/48'}
                 alt="Profile"
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full border-2 border-green-200"
               />
               <div>
@@ -375,6 +378,12 @@ export default function PaymentSuccess() {
                     <span className="text-gray-600">ค่าจัดส่ง:</span>
                     <span className="font-medium">฿{formatCurrency(order.shippingFee)}</span>
                   </div>
+                  {order.tax > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">ภาษี:</span>
+                      <span className="font-medium">฿{formatCurrency(order.tax)}</span>
+                    </div>
+                  )}
                   {order.discount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">ส่วนลด:</span>
@@ -448,9 +457,11 @@ export default function PaymentSuccess() {
               <div className="space-y-3">
                 {order.orderItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                    <img
+                    <Image
                       src={item.product.images[0]?.imageUrl || '/api/placeholder/60/60'}
                       alt={item.product.name}
+                      width={60}
+                      height={60}
                       className="w-15 h-15 object-cover rounded-md"
                     />
                     <div className="flex-1">

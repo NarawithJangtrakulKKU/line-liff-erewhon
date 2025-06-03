@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, Eye, Edit, Trash2, Plus, Package, Truck, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
+import { Search, Eye, Edit, Trash2, Package, Truck, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
 import axios from 'axios'
 import {
   Dialog,
@@ -10,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -230,9 +230,11 @@ const OrderDetailsModal = React.memo(({
                 <CardContent>
                   <div className="flex items-center gap-3">
                     {order.user.pictureUrl && (
-                      <img
+                      <Image
                         src={order.user.pictureUrl}
                         alt={order.user.displayName}
+                        width={40}
+                        height={40}
                         className="w-10 h-10 rounded-full"
                       />
                     )}
@@ -286,9 +288,11 @@ const OrderDetailsModal = React.memo(({
                   {order.orderItems.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
                       {item.product.imageUrl && (
-                        <img
+                        <Image
                           src={item.product.imageUrl}
                           alt={item.product.name}
+                          width={64}
+                          height={64}
                           className="w-16 h-16 object-cover rounded"
                         />
                       )}
@@ -392,9 +396,11 @@ const OrderDetailsModal = React.memo(({
                     <div>
                       <Label className="text-sm font-medium">Payment Slip</Label>
                       <div className="mt-1">
-                        <img
+                        <Image
                           src={order.paymentSlipUrl}
                           alt="Payment slip"
+                          width={288}
+                          height={200}
                           className="max-w-xs border rounded"
                         />
                       </div>
@@ -846,10 +852,12 @@ export default function AdminOrdersPage() {
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {order.user.pictureUrl && (
-                                  <img
+                                  <Image
                                     src={order.user.pictureUrl}
                                     alt={order.user.displayName}
-                                    className="w-8 h-8 rounded-full"
+                                    width={40}
+                                    height={40}
+                                    className="w-10 h-10 rounded-full"
                                   />
                                 )}
                                 <div>
@@ -905,7 +913,7 @@ export default function AdminOrdersPage() {
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Delete Order</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Are you sure you want to delete order "{order.orderNumber}"? This action cannot be undone.
+                                        Are you sure you want to delete order &quot;{order.orderNumber}&quot;? This action cannot be undone.
                                         <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
                                           <strong>Warning:</strong> This will permanently delete the order and all associated data.
                                         </div>
