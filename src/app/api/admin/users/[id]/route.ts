@@ -6,12 +6,11 @@ const prisma = new PrismaClient()
 // PUT - Update user role
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params before destructuring
-    const resolvedParams = await Promise.resolve(params);
-    const { id } = resolvedParams;
+    const { id } = await params;
     const body = await request.json()
     const { role } = body
 
@@ -67,12 +66,11 @@ export async function PUT(
 // DELETE - Delete user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await params before destructuring
-    const resolvedParams = await Promise.resolve(params);
-    const { id } = resolvedParams;
+    const { id } = await params;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({

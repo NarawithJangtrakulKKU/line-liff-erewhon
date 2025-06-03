@@ -3,9 +3,33 @@ import { PrismaClient, PaymentMethod, ShippingMethod } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+interface OrderItem {
+  productId: string
+  quantity: number
+  price: number
+}
+
+interface OrderSummary {
+  subtotal: number
+  shipping: number
+  tax: number
+  total: number
+  discount?: number
+}
+
+interface OrderData {
+  userId: string
+  addressId: string
+  items: OrderItem[]
+  summary: OrderSummary
+  paymentMethod: string
+  shippingMethod: string
+  notes?: string
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json()
+    const data: OrderData = await req.json()
     
     // Validate shipping method
     if (!data.shippingMethod || !['TH_POST', 'TH_EXPRESS'].includes(data.shippingMethod)) {
@@ -57,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify that all products exist and have sufficient stock
-    const productIds = data.items.map((item: any) => item.productId)
+    const productIds = data.items.map((item: OrderItem) => item.productId)
     const products = await prisma.product.findMany({
       where: {
         id: { in: productIds },
@@ -102,7 +126,7 @@ export async function POST(req: NextRequest) {
           total: data.summary.total,
           notes: data.notes || null,
           orderItems: {
-            create: data.items.map((item: any) => ({
+            create: data.items.map((item: OrderItem) => ({
               productId: item.productId,
               quantity: item.quantity,
               price: item.price,

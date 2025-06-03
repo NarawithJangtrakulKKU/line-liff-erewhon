@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
 import { useProfile } from '@/hooks/useProfile'
@@ -8,14 +9,11 @@ import Navbar from '@/components/Navbar'
 import { 
   User, 
   Calendar, 
-  ShoppingBag, 
-  CreditCard, 
+  ShoppingBag,
   Settings, 
   Star,
   Package,
   TrendingUp,
-  Award,
-  Heart,
   History,
   Wallet,
   RefreshCw
@@ -137,9 +135,11 @@ export default function ProfilePage() {
             <div className="p-6 md:p-8 lg:p-12">
               <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
                 <div className="relative flex-shrink-0">
-                  <img
+                  <Image
                     src={profile.pictureUrl || '/api/placeholder/128/128'}
                     alt="Profile"
+                    width={96}
+                    height={96}
                     className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-lg"
                   />
                   <div className="absolute -bottom-2 -right-2 bg-green-400 text-white rounded-full p-2">

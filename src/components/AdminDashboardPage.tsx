@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import AdminSidebar from '@/components/AdminSidebar'
@@ -66,6 +67,14 @@ interface Category {
   }
 }
 
+interface Product {
+  id: string;
+  name: string;
+  price: string | number;
+  stock: number;
+  images?: Array<{ imageUrl: string }>;
+}
+
 // Helper functions
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('th-TH', {
@@ -99,7 +108,7 @@ const getStatusConfig = (status: string) => {
 const getStatusBadge = (status: string) => {
   const config = getStatusConfig(status)
   return (
-    <Badge variant={config.variant as any} className={config.className}>
+    <Badge variant={config.variant as "default" | "secondary" | "destructive" | "outline"} className={config.className}>
       {config.label}
     </Badge>
   )
@@ -165,7 +174,6 @@ export default function AdminDashboard() {
       const userStats = usersRes.data.stats
 
       // Calculate growth rates (mock calculation for now)
-      const currentMonth = new Date().getMonth()
       const mockGrowthData = {
         revenueGrowth: 20.1,
         ordersGrowth: 15.3,
@@ -194,7 +202,7 @@ export default function AdminDashboard() {
         setTopProducts(orderStats.topProducts.slice(0, 5))
       } else {
         // Fallback to recent products
-        const productsWithMockStats = products.slice(0, 5).map((product: any, index: number) => ({
+        const productsWithMockStats = products.slice(0, 5).map((product: Product, index: number) => ({
           productId: product.id,
           productName: product.name,
           imageUrl: product.images?.[0]?.imageUrl,
@@ -406,9 +414,11 @@ export default function AdminDashboard() {
                       <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
                         <div className="flex items-center gap-3 flex-1">
                           {order.user.pictureUrl && (
-                            <img
+                            <Image
                               src={order.user.pictureUrl}
                               alt={order.user.displayName}
+                              width={40}
+                              height={40}
                               className="w-10 h-10 rounded-full"
                             />
                           )}
@@ -458,13 +468,15 @@ export default function AdminDashboard() {
                       ไม่มีข้อมูลสินค้า
                     </div>
                   ) : (
-                    topProducts.map((product, index) => (
+                    topProducts.map((product) => (
                       <div key={product.productId} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3 flex-1">
                           {product.imageUrl && (
-                            <img
+                            <Image
                               src={product.imageUrl}
                               alt={product.productName}
+                              width={40}
+                              height={40}
                               className="w-10 h-10 rounded object-cover"
                             />
                           )}

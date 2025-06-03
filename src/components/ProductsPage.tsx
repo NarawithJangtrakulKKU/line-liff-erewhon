@@ -1,15 +1,12 @@
 'use client'
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import axios from 'axios';
 import Link from 'next/link';
-import { Search, ShoppingCart, Filter, SlidersHorizontal } from 'lucide-react';
+import { Search, ShoppingCart, SlidersHorizontal } from 'lucide-react';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +32,6 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 
 // ประเภทตาม Prisma schema
 interface Category {
@@ -298,7 +294,7 @@ export default function ProductsPage() {
                   <SheetHeader>
                     <SheetTitle>Filters & Sort</SheetTitle>
                     <SheetDescription>
-                      Filter and sort the products to find what you're looking for.
+                      Filter and sort the products to find what you&apos;re looking for.
                     </SheetDescription>
                   </SheetHeader>
                   
@@ -458,10 +454,12 @@ export default function ProductsPage() {
                   <Card key={product.id} className="overflow-hidden group min-h-[350px] flex flex-col">
                     <div className="relative h-48 bg-gray-100 overflow-hidden">
                       {product.images && product.images.length > 0 ? (
-                        <img
+                        <Image
                           src={product.images[0].imageUrl}
                           alt={product.images[0].altText || product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          width={200}
+                          height={200}
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder.png';
                           }}
@@ -537,8 +535,8 @@ export default function ProductsPage() {
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-1">No products found</h3>
                 <p className="text-gray-500 max-w-md mx-auto">
-                  We couldn't find any products matching your search and filters.
-                  Try adjusting your search or filters to find what you're looking for.
+                  We couldn&apos;t find any products matching your search and filters.
+                  Try adjusting your search or filters to find what you&apos;re looking for.
                 </p>
                 <Button variant="outline" onClick={resetFilters} className="mt-4">
                   Reset Filters

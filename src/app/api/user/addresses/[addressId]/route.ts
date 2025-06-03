@@ -4,8 +4,8 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 // PUT /api/user/addresses/[addressId]
-export async function PUT(req: NextRequest, { params }: { params: { addressId: string } }) {
-  const { addressId } = params
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ addressId: string }> }) {
+  const { addressId } = await params
   const data = await req.json()
   const address = await prisma.address.update({
     where: { id: addressId },
@@ -15,8 +15,8 @@ export async function PUT(req: NextRequest, { params }: { params: { addressId: s
 }
 
 // DELETE /api/user/addresses/[addressId]
-export async function DELETE(req: NextRequest, { params }: { params: { addressId: string } }) {
-  const { addressId } = params
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ addressId: string }> }) {
+  const { addressId } = await params
   await prisma.address.delete({ where: { id: addressId } })
   return NextResponse.json({ success: true })
 } 

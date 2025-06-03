@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import type { Liff } from '@line/liff';
+import { apiClient } from '@/lib/api';
 
 type Profile = NonNullable<Awaited<ReturnType<Liff['getProfile']>>>;
 
@@ -41,7 +41,7 @@ export const useLiff = () => {
   return context;
 };
 
-export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LiffProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dbUser, setDbUser] = useState<DatabaseUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -51,29 +51,8 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
 
-  // ตั้งค่า axios instance สำหรับ API calls
-  const apiClient = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
-    withCredentials: true, // สำคัญ! เพื่อให้ cookies ถูกส่งไปด้วย
-    timeout: 10000, // 10 seconds timeout
-  });
-
-  // Axios response interceptor สำหรับจัดการ error
-  apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        // Token หมดอายุหรือไม่ valid
-        setIsAuthenticated(false);
-        setToken(null);
-        setDbUser(null);
-      }
-      return Promise.reject(error);
-    }
-  );
-
-  // ฟังก์ชันเก็บข้อมูล user ลง database และสร้าง JWT
-  const saveUserToDatabase = async (profile: Profile) => {
+  // Wrap functions in useCallback to prevent re-creation on every render
+  const saveUserToDatabase = useCallback(async (profile: Profile) => {
     try {
       const response = await apiClient.post('/user', {
         lineUserId: profile.userId,
@@ -92,10 +71,10 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
       throw error;
     }
-  };
+  }, []);
 
   // ฟังก์ชันดึงข้อมูล user จาก database
-  const fetchUserFromDatabase = async (lineUserId: string) => {
+  const fetchUserFromDatabase = useCallback(async (lineUserId: string) => {
     try {
       const response = await apiClient.get('/user', {
         params: { lineUserId }
@@ -108,10 +87,10 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error fetching user from database:', error);
       return null;
     }
-  };
+  }, []);
 
   // ฟังก์ชันตรวจสอบ JWT Token ที่มีอยู่
-  const checkExistingAuth = async () => {
+  const checkExistingAuth = useCallback(async () => {
     try {
       const response = await apiClient.get('/auth/verify');
       
@@ -124,7 +103,7 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
       return false;
     }
-  };
+  }, []);
 
   const refreshUserData = async () => {
     if (profile) {
@@ -199,10 +178,10 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initializeLiff();
-  }, [liffId]);
+  }, [liffId, checkExistingAuth, fetchUserFromDatabase, saveUserToDatabase]);
 
   const login = () => {
-    const liff = (window as any).liff;
+    const liff = (window as typeof window & { liff?: Liff }).liff;
     if (liff && !liff.isLoggedIn()) {
       liff.login();
     }
@@ -214,7 +193,7 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await apiClient.post('/auth/logout');
 
       // Logout จาก LIFF
-      const liff = (window as any).liff;
+      const liff = (window as typeof window & { liff?: Liff }).liff;
       if (liff) {
         liff.logout();
       }
@@ -238,7 +217,7 @@ export const LiffProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendMessage = async (message: string) => {
     try {
-      const liff = (window as any).liff;
+      const liff = (window as typeof window & { liff?: Liff }).liff;
       if (liff && liff.isInClient()) {
         await liff.sendMessages([
           {

@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Liff } from '@line/liff'
 import Image from 'next/image'
 import { useLiff } from '@/app/contexts/LiffContext'
-
-type Profile = NonNullable<Awaited<ReturnType<Liff['getProfile']>>>
 
 export default function Home() {
   const { profile, isInitialized, isLoggedIn, login } = useLiff()

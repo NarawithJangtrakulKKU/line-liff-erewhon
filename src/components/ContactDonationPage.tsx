@@ -117,7 +117,7 @@ export default function ContactDonationPage() {
                 {/* Mission */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Briefly describe your organization's mission and how it aligns with ours*
+                        Briefly describe your organization&apos;s mission and how it aligns with ours*
                     </label>
                     <textarea
                         name="mission"

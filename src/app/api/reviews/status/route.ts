@@ -33,41 +33,57 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get all reviews for this user with the specified products and orders
+    // First, get all order items for the specified orders and products
+    const orderItems = await prisma.orderItem.findMany({
+      where: {
+        order: {
+          id: { in: checks.map(check => check.orderId) },
+          userId: userId
+        },
+        productId: { in: checks.map(check => check.productId) }
+      },
+      select: {
+        id: true,
+        productId: true,
+        orderId: true
+      }
+    })
+
+    // Create a map of productId-orderId to orderItemId
+    const orderItemMap = new Map()
+    orderItems.forEach(item => {
+      const key = `${item.productId}-${item.orderId}`
+      orderItemMap.set(key, item.id)
+    })
+
+    // Get all reviews for this user with the specified order items
+    const orderItemIds = Array.from(orderItemMap.values())
     const reviews = await prisma.review.findMany({
       where: {
         userId: userId,
-        AND: [
-          {
-            OR: checks.map(check => ({
-              AND: [
-                { productId: check.productId },
-                { orderId: check.orderId }
-              ]
-            }))
-          }
-        ]
+        orderItemId: { in: orderItemIds }
       },
       select: {
         id: true,
         productId: true,
         orderId: true,
+        orderItemId: true,
         rating: true,
         createdAt: true
       }
     })
 
-    // Create a map for quick lookup
+    // Create a map for quick lookup by orderItemId
     const reviewMap = new Map()
     reviews.forEach(review => {
-      const key = `${review.productId}-${review.orderId}`
-      reviewMap.set(key, review)
+      reviewMap.set(review.orderItemId, review)
     })
 
     // Build response array
     const reviewStatuses = checks.map(check => {
       const key = `${check.productId}-${check.orderId}`
-      const review = reviewMap.get(key)
+      const orderItemId = orderItemMap.get(key)
+      const review = orderItemId ? reviewMap.get(orderItemId) : null
       
       return {
         productId: check.productId,
@@ -89,7 +105,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         message: 'เกิดข้อผิดพลาดในการตรวจสอบสถานะการรีวิว',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
       },
       { status: 500 }
     )

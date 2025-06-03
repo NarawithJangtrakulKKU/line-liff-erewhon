@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Skeleton } from "@/components/ui/skeleton"
 import axios from 'axios'
 
@@ -54,19 +55,21 @@ export default function AllCategoriesPage() {
             <div className="container mx-auto px-4 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <a href="#" className="block">
                     <div className="relative overflow-hidden rounded-2xl h-32 md:h-40 lg:h-48 bg-gray-300">
-                        <img 
+                        <Image 
                             src="/images/carousel/pexels-ash-craig-122861-376464.jpg" 
                             alt="The Cafe" 
-                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                            fill
+                            className="object-cover transition-transform duration-300 hover:scale-105" 
                         />
                     </div>
                 </a>
                 <a href="#" className="block">
                     <div className="relative overflow-hidden rounded-2xl h-32 md:h-40 lg:h-48 bg-gray-300">
-                        <img 
+                        <Image 
                             src="/images/carousel/pexels-ella-olsson-572949-1640777.jpg" 
                             alt="The Tonic Bar" 
-                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                            fill
+                            className="object-cover transition-transform duration-300 hover:scale-105" 
                         />
                     </div>
                 </a>
@@ -90,9 +93,11 @@ export default function AllCategoriesPage() {
                                 className="flex flex-col items-center group"
                             >
                                 <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-gray-100 mb-3 group-hover:scale-105 transition-transform">
-                                    <img 
+                                    <Image 
                                         src={category.imageUrl || '/images/placeholder.png'} 
                                         alt={category.name} 
+                                        width={128}
+                                        height={128}
                                         className="w-full h-full object-cover" 
                                     />
                                 </div>

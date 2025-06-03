@@ -380,14 +380,14 @@ const VendorClaimsForm: React.FC = () => {
                     {/* Terms and Conditions */}
                     <div className="bg-gray-50 p-6 rounded-lg">
                         <p className="text-sm text-gray-700 mb-4">
-                            Erewhon's goal is to pay its Vendor Community accurately the first time. If a
+                            Erewhon&apos;s goal is to pay its Vendor Community accurately the first time. If a
                             Vendor feels it was short paid or if there is a skipped invoice, a Vendor Claim
                             inquiry needs to be submitted using this portal no later than 90 days after the
                             payment date. This will allow our Accounts Payable team to efficiently log, track
                             and investigate each issue completely. Upon completion of the investigation, a
                             response inclusive of any supporting documentation will be emailed to the
                             address provided in the original claim. If a payment/repayment is required, the
-                            amount determined to be due will be paid on Erewhon's next weekly AP check
+                            amount determined to be due will be paid on Erewhon&apos;s next weekly AP check
                             run. Thank you!
                         </p>
 
