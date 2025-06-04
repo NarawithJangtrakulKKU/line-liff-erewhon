@@ -327,10 +327,10 @@ export default function HomePage() {
       <section className="py-6 sm:py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Popular Categories</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">หมวดหมู่ยอดนิยม</h2>
               <Link href="/allcategories" className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
                 <button className="cursor-pointer text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                  ดูทั้งหมด <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
               </Link>
           </div>
@@ -445,11 +445,11 @@ export default function HomePage() {
       <section className="py-6 sm:py-8 md:py-12 px-4 bg-gray-50">
           <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Featured Products</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">สินค้าแนะนำ</h2>
                   <div className="flex items-center space-x-2">
                       <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
                           <Link href="/allfeatures">
-                              View All
+                              ดูทั้งหมด
                           </Link>
                       </button>
                       <button
@@ -490,11 +490,11 @@ export default function HomePage() {
       <section className="py-6 sm:py-8 md:py-12 px-4 bg-gray-50">
           <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">New Products</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">สินค้าใหม่ล่าสุด</h2>
                   <div className="flex items-center space-x-2">
                       <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
                           <Link href="/allfeatures">
-                              View All
+                             ดูทั้งหมด
                           </Link>
                       </button>
                       <button
@@ -535,11 +535,11 @@ export default function HomePage() {
       <section className="py-6 sm:py-8 md:py-12 px-4 bg-gray-50">
           <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Our Products</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">สินค้าของเรา</h2>
                   <div className="flex items-center space-x-2">
                       <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
                           <Link href="/products">
-                              View All
+                              ดูทั้งหมด
                           </Link>
                       </button>
                       <button

@@ -50,11 +50,11 @@ export default function Navbar() {
     };
 
     const menuItems = [
-        { title: "Delivery | Pickup", href: "/home" },
-        { title: "Digital Gift Cards", href: "/giftcard" },
-        { title: "FAQs", href: "/faqs" },
-        { title: "Our Mission", href: "/about" },
-        { title: "Contact Us", href: "/contact" }
+        { title: "จัดส่ง | รับเอง", href: "/home" },
+        { title: "บัตรของขวัญดิจิทัล", href: "/giftcard" },
+        { title: "คำถามที่พบบ่อย", href: "/faqs" },
+        { title: "เกี่ยวกับเรา", href: "/about" },
+        { title: "ติดต่อเรา", href: "/contact" }
     ];
 
     return (
@@ -70,7 +70,7 @@ export default function Navbar() {
                             <button
                                 onClick={toggleMenu}
                                 className="focus:outline-none transform transition-all duration-300 hover:scale-110 hover:bg-gray-800 rounded-full p-2 hover:rotate-90"
-                                aria-label="Toggle menu"
+                                aria-label="เปิด/ปิดเมนู"
                             >
                                 {isMenuOpen ? (
                                     <X className="w-6 h-6 text-white transition-transform duration-300 rotate-180" />
@@ -92,7 +92,7 @@ export default function Navbar() {
                             <Link
                                 href="/cart"
                                 className="relative p-2 text-white hover:text-orange-400 transition-all duration-300 hover:scale-110 hover:bg-gray-800 rounded-full group"
-                                aria-label="Shopping cart"
+                                aria-label="ตะกร้าสินค้า"
                             >
                                 <ShoppingCart className="w-6 h-6 transition-transform duration-300 group-hover:rotate-12" />
                                 {/* Badge สำหรับจำนวนสินค้าในตะกร้า (optional) */}
@@ -108,7 +108,7 @@ export default function Navbar() {
                                         ? "text-orange-400 bg-orange-500/20 ring-2 ring-orange-400/50"
                                         : "text-white hover:text-orange-400"
                                     }`}
-                                aria-label="User profile"
+                                aria-label="โปรไฟล์ผู้ใช้"
                             >
                                 <User className="w-6 h-6 transition-transform duration-300 group-hover:rotate-12" />
                             </Link>
@@ -140,7 +140,7 @@ export default function Navbar() {
                             <button
                                 onClick={toggleMenu}
                                 className="focus:outline-none hover:bg-gray-800 rounded-full p-2 transition-all duration-300 hover:scale-110 hover:rotate-90"
-                                aria-label="Close menu"
+                                aria-label="ปิดเมนู"
                             >
                                 <X className="w-6 h-6 text-white" />
                             </button>

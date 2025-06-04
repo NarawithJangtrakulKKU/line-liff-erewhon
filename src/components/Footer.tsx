@@ -17,17 +17,17 @@ export default function Footer() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 mb-16">
                     {/* SHOP */}
                     <div className="space-y-4">
-                        <h3 className="text-xl font-medium mb-6 text-gray-200">SHOP</h3>
+                        <h3 className="text-xl font-medium mb-6 text-gray-200">ช้อปปิ้ง</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/home" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Delivery | Pickup</span>
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">จัดส่ง | รับเอง</span>
                                 </Link>
                             </li>
                             
                             <li>
                                 <Link href="/giftcard" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Gift Cards</span>
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">บัตรของขวัญ</span>
                                 </Link>
                             </li>
                         </ul>
@@ -35,11 +35,11 @@ export default function Footer() {
 
                     {/* COMPANY */}
                     <div className="space-y-4">
-                        <h3 className="text-xl font-medium mb-6 text-gray-200">COMPANY</h3>
+                        <h3 className="text-xl font-medium mb-6 text-gray-200">บริษัท</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/about" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Our Mission</span>
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">ภารกิจของเรา</span>
                                 </Link>
                             </li>
 
@@ -48,37 +48,28 @@ export default function Footer() {
 
                     {/* CONNECT */}
                     <div className="space-y-4">
-                        <h3 className="text-xl font-medium mb-6 text-gray-200">CONNECT</h3>
+                        <h3 className="text-xl font-medium mb-6 text-gray-200">ติดต่อ</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/faqs" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">FAQs</span>
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">คำถามที่พบบ่อย</span>
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/contact" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Contact Us</span>
+                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">ติดต่อเรา</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link href="/vendor" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Vendor Submission</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/vendor" className="text-gray-400 hover:text-white transition-colors duration-300 flex items-center group">
-                                    <span className="transform group-hover:translate-x-1 transition-transform duration-300">Vendor Dashboard</span>
-                                </Link>
-                            </li>
+                            
                         </ul>
                     </div>
 
                     {/* APP */}
                     <div className="space-y-4">
-                        <h3 className="text-xl font-medium mb-6 text-gray-200">THE EREWHON APP</h3>
-                        <p className="text-gray-400 mb-4">Made with your lifestyle in mind</p>
+                        <h3 className="text-xl font-medium mb-6 text-gray-200">แอป EREWHON</h3>
+                        <p className="text-gray-400 mb-4">สร้างขึ้นเพื่อไลฟ์สไตล์ของคุณ</p>
                         <Link href="/app-download" className="inline-block text-gray-200 hover:text-white mb-6 underline-offset-4 hover:underline transition-all duration-300">
-                            Download Now
+                            ดาวน์โหลดตอนนี้
                         </Link>
                     </div>
                 </div>
@@ -87,12 +78,12 @@ export default function Footer() {
                 <div className="border-t border-gray-800 pt-8 flex flex-col gap-6 lg:flex-row lg:justify-between lg:items-center">
                     <div className="w-full lg:w-auto">
                         <ul className="flex flex-wrap gap-x-6 gap-y-3">
-                            <li><Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Terms & Conditions</Link></li>
-                            <li><Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Privacy Policy</Link></li>
-                            <li><Link href="/recalls" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Product Recalls</Link></li>
-                            <li><Link href="/collection-notice" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Notice At Collection</Link></li>
-                            <li><Link href="/purchase-terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Purchase Order Terms</Link></li>
-                            <li><Link href="/food-allergy" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">Food Allergy Disclaimer</Link></li>
+                            <li><Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">ข้อกำหนดและเงื่อนไข</Link></li>
+                            <li><Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">นโยบายความเป็นส่วนตัว</Link></li>
+                            <li><Link href="/recalls" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">การเรียกคืนสินค้า</Link></li>
+                            <li><Link href="/collection-notice" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">ประกาศการเก็บข้อมูล</Link></li>
+                            <li><Link href="/purchase-terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">เงื่อนไขใบสั่งซื้อ</Link></li>
+                            <li><Link href="/food-allergy" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">ข้อปฏิเสธความรับผิดชอบเรื่องอาหารแพ้</Link></li>
                         </ul>
                     </div>
 
@@ -101,14 +92,14 @@ export default function Footer() {
                         <form className="flex flex-col sm:flex-row sm:max-w-md gap-3 sm:gap-0">
                             <input
                                 type="email"
-                                placeholder="EMAIL"
+                                placeholder="อีเมล"
                                 className="w-full sm:w-auto bg-gray-900 border border-gray-700 focus:border-gray-500 rounded sm:rounded-l px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-gray-500 transition-all duration-300"
                             />
                             <button
                                 type="submit"
                                 className="bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-200 hover:text-white rounded sm:rounded-r px-6 py-3 flex items-center justify-center transition-all duration-300 group"
                             >
-                                JOIN US
+                                เข้าร่วมกับเรา
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
