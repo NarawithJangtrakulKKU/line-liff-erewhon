@@ -30,17 +30,17 @@ export default function ContactDonationPage() {
             <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-8">
                 <div className="text-center mb-4">
                     <h1 className="text-4xl font-bold tracking-wider text-gray-900">EREWHON</h1>
-                    <h2 className="text-xl font-semibold text-gray-800">DONATION REQUEST</h2>
+                    <h2 className="text-xl font-semibold text-gray-800">คำขอรับบริจาค</h2>
                 </div>
 
                 {/* Name */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Name*</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อ-นามสกุล*</label>
                     <div className="flex gap-4">
                         <input
                             type="text"
                             name="firstName"
-                            placeholder="First Name"
+                            placeholder="ชื่อ"
                             value={formData.firstName}
                             onChange={handleChange}
                             required
@@ -49,7 +49,7 @@ export default function ContactDonationPage() {
                         <input
                             type="text"
                             name="lastName"
-                            placeholder="Last Name"
+                            placeholder="นามสกุล"
                             value={formData.lastName}
                             onChange={handleChange}
                             required
@@ -60,7 +60,7 @@ export default function ContactDonationPage() {
 
                 {/* Email */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email*</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">อีเมล*</label>
                     <input
                         type="email"
                         name="email"
@@ -73,7 +73,7 @@ export default function ContactDonationPage() {
 
                 {/* Confirm Email */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Email*</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ยืนยันอีเมล*</label>
                     <input
                         type="email"
                         name="confirmEmail"
@@ -87,7 +87,7 @@ export default function ContactDonationPage() {
                 {/* Organization Name */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Organization/School Name*
+                        ชื่อองค์กร/สถานศึกษา*
                     </label>
                     <input
                         type="text"
@@ -102,7 +102,7 @@ export default function ContactDonationPage() {
                 {/* Organization Website */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Organization/School Website*
+                        เว็บไซต์องค์กร/สถานศึกษา*
                     </label>
                     <input
                         type="text"
@@ -117,7 +117,7 @@ export default function ContactDonationPage() {
                 {/* Mission */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Briefly describe your organization&apos;s mission and how it aligns with ours*
+                        อธิบายพันธกิจขององค์กรของคุณโดยย่อ และบอกว่าสอดคล้องกับเราอย่างไร*
                     </label>
                     <textarea
                         name="mission"
@@ -132,7 +132,7 @@ export default function ContactDonationPage() {
                 {/* Usage */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        How will the donation be used?*
+                        การบริจาคจะถูกนำไปใช้อย่างไร*
                     </label>
                     <textarea
                         name="usage"
@@ -147,7 +147,7 @@ export default function ContactDonationPage() {
                 {/* Request */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        What are you requesting from us?*
+                        คุณต้องการขออะไรจากเรา*
                     </label>
                     <textarea
                         name="request"
@@ -165,13 +165,13 @@ export default function ContactDonationPage() {
                         type="submit"
                         className="w-full bg-black text-white py-4 px-6 rounded-md font-medium text-lg hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                     >
-                        Submit Form
+                        ส่งแบบฟอร์ม
                     </button>
                 </div>
 
                 {/* Footer Note */}
                 <div className="mt-8 text-center text-sm text-gray-500">
-                    <p>All fields marked with * are required</p>
+                    <p>ช่องที่มีเครื่องหมาย * จำเป็นต้องกรอก</p>
                 </div>
             </form>
         </div>
