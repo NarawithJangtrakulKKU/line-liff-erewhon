@@ -13,16 +13,16 @@ export default function ContactUsPage() {
     });
 
     const issueTypes = [
-        { id: 'order', label: 'Order Issue', icon: '📦' },
-        { id: 'corporate', label: 'Corporate Office', icon: '🏢' },
-        { id: 'membership', label: 'Membership', icon: '👥' },
-        { id: 'collaborations', label: 'Collaborations', icon: '🤝' },
-        { id: 'marketing', label: 'Marketing', icon: '📈' },
-        { id: 'app', label: 'App Login', icon: '📱' },
-        { id: 'realestate', label: 'Real Estate', icon: '🏠' },
-        { id: 'donation', label: 'Donation Request', icon: '💝' },
-        { id: 'press', label: 'Press Inquires', icon: '📰' },
-        { id: 'vendor', label: 'Vendor Claims', icon: '🏪' }
+        { id: 'order', label: 'ปัญหาการสั่งซื้อ', icon: '📦' },
+        { id: 'corporate', label: 'สำนักงานใหญ่', icon: '🏢' },
+        { id: 'membership', label: 'สมาชิก', icon: '👥' },
+        { id: 'collaborations', label: 'ความร่วมมือ', icon: '🤝' },
+        { id: 'marketing', label: 'การตลาด', icon: '📈' },
+        { id: 'app', label: 'เข้าสู่ระบบแอป', icon: '📱' },
+        { id: 'realestate', label: 'อสังหาริมทรัพย์', icon: '🏠' },
+        { id: 'donation', label: 'ขอรับบริจาค', icon: '💝' },
+        { id: 'press', label: 'สอบถามข้อมูลสื่อ', icon: '📰' },
+        { id: 'vendor', label: 'เรียกร้องจากผู้ขาย', icon: '🏪' }
     ];
 
     const externalForms = ['donation', 'press', 'vendor'];
@@ -48,16 +48,16 @@ export default function ContactUsPage() {
             <div className="container mx-auto px-4 py-12">
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
+                    <h1 className="text-4xl font-bold mb-4">ติดต่อเรา</h1>
                     <p className="text-gray-300">
-                        Couldn&apos;t find what you were looking for in our <span className="text-blue-400">FAQs</span>? We&apos;re here to help!
+                        หาคำตอบที่ต้องการใน <span className="text-blue-400">คำถามที่พบบ่อย</span> ไม่เจอใช่ไหม? เรายินดีช่วยเหลือ!
                     </p>
                 </div>
 
                 <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
                     {/* Left Column - Issue Selection */}
                     <div>
-                        <h2 className="text-xl font-semibold mb-6 text-gray-300">WHAT IS THE ISSUE ABOUT?</h2>
+                        <h2 className="text-xl font-semibold mb-6 text-gray-300">เรื่องที่ต้องการสอบถามเกี่ยวกับอะไร?</h2>
                         <div className="space-y-3">
                             {issueTypes.map((issue) => {
                                 const isSelected = selectedIssue === issue.id;
@@ -104,13 +104,13 @@ export default function ContactUsPage() {
 
                             {/* Store Selection */}
                             <div className="mb-8">
-                                <h3 className="text-lg font-semibold text-gray-300 mb-2">PLEASE SELECT YOUR STORE</h3>
+                                <h3 className="text-lg font-semibold text-gray-300 mb-2">กรุณาเลือกสาขาของคุณ</h3>
                                 <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                                     <div className="flex items-center space-x-4">
                                         <div className="w-16 h-16 bg-gray-600 rounded-lg overflow-hidden">
                                             <Image
                                                 src="/images/about/EREWHON_Storefronts_desktop_ec29b31483.png"
-                                                alt="Grove store"
+                                                alt="สาขา Grove"
                                                 width={64}
                                                 height={64}
                                                 className="w-full h-full object-cover"
@@ -130,7 +130,7 @@ export default function ContactUsPage() {
                                 <input
                                     type="text"
                                     name="name"
-                                    placeholder="Please enter your name"
+                                    placeholder="กรุณากรอกชื่อของคุณ"
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     required
@@ -139,7 +139,7 @@ export default function ContactUsPage() {
                                 <input
                                     type="tel"
                                     name="phone"
-                                    placeholder="Please enter your phone number"
+                                    placeholder="กรุณากรอกหมายเลขโทรศัพท์ของคุณ"
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     required
@@ -148,7 +148,7 @@ export default function ContactUsPage() {
                                 <input
                                     type="email"
                                     name="email"
-                                    placeholder="Email"
+                                    placeholder="อีเมล"
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     required
@@ -156,7 +156,7 @@ export default function ContactUsPage() {
                                 />
                                 <textarea
                                     name="message"
-                                    placeholder="Message"
+                                    placeholder="ข้อความ"
                                     rows={6}
                                     value={formData.message}
                                     onChange={handleInputChange}
@@ -167,14 +167,14 @@ export default function ContactUsPage() {
                                     type="button"
                                     className="bg-yellow-100 text-gray-900 px-6 py-3 rounded-lg font-medium hover:bg-yellow-200 flex items-center space-x-2"
                                 >
-                                    <span>Attach A Photo</span>
+                                    <span>แนบรูปภาพ</span>
                                     <span>📎</span>
                                 </button>
                                 <button
                                     type="submit"
                                     className="w-full bg-yellow-100 text-gray-900 py-4 rounded-lg font-semibold text-lg hover:bg-yellow-200"
                                 >
-                                    Send
+                                    ส่ง
                                 </button>
                             </form>
                         </div>

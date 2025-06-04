@@ -141,9 +141,9 @@ const VendorClaimsForm: React.FC = () => {
                             <span className="text-green-600 font-medium">{uploadedFiles[type]?.name}</span>
                         ) : (
                             <>
-                                Drag and drop here or <span className="text-blue-600 underline">Browse files</span>
+                                ลากและวางไฟล์ที่นี่ หรือ <span className="text-blue-600 underline">เลือกไฟล์</span>
                                 <br />
-                                <span className="text-xs text-gray-500">Max file size: 10 MB</span>
+                                <span className="text-xs text-gray-500">ขนาดไฟล์สูงสุด: 10 MB</span>
                             </>
                         )}
                     </p>
@@ -160,7 +160,7 @@ const VendorClaimsForm: React.FC = () => {
                     <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-wider">
                         EREWHON
                     </h1>
-                    <h2 className="text-2xl text-gray-700">Vendor Claims</h2>
+                    <h2 className="text-2xl text-gray-700">การเคลมสินค้า</h2>
                 </div>
 
                 <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-8 space-y-6">
@@ -168,7 +168,7 @@ const VendorClaimsForm: React.FC = () => {
                     <div className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Vendor Name/Billing Entity (as shown on invoice)*
+                                ชื่อผู้จำหน่าย/ผู้เรียกเก็บเงิน (ตามที่แสดงในใบแจ้งหนี้)*
                             </label>
                             <input
                                 type="text"
@@ -185,7 +185,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Contact Name*
+                                ชื่อผู้ติดต่อ*
                             </label>
                             <input
                                 type="text"
@@ -202,7 +202,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Contact Email*
+                                อีเมล์ติดต่อ*
                             </label>
                             <input
                                 type="email"
@@ -219,7 +219,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Contact Phone Number*
+                                หมายเลขโทรศัพท์ติดต่อ*
                             </label>
                             <input
                                 type="tel"
@@ -236,7 +236,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Date of Invoice*
+                                วันที่ออกใบสั่งซื้อสินค้า*
                             </label>
                             <div className="relative">
                                 <input
@@ -256,7 +256,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Invoice Number*
+                                หมายเลขใบสั่งซื้อสินค้า*
                             </label>
                             <input
                                 type="text"
@@ -273,7 +273,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Purchase Order Number*
+                                เลขที่ใบสั่งซื้อ*
                             </label>
                             <input
                                 type="text"
@@ -293,7 +293,7 @@ const VendorClaimsForm: React.FC = () => {
                     <div className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Invoice Amount*
+                                จำนวนเงินใบสั่งซื้อสินค้า*
                             </label>
                             <div className="relative">
                                 <span className="absolute left-3 top-2.5 text-gray-500">$</span>
@@ -314,7 +314,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Invoice Payment Amount*
+                                ยอดเงินชำระใบสั่งซื้อสินค้า*
                             </label>
                             <div className="relative">
                                 <span className="absolute left-3 top-2.5 text-gray-500">$</span>
@@ -335,7 +335,7 @@ const VendorClaimsForm: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Claimed Shortage/Discrepancy Amount*
+                                จำนวนเงินที่เรียกร้องค่าขาดหาย/ความคลาดเคลื่อน*
                             </label>
                             <div className="relative">
                                 <span className="absolute left-3 top-2.5 text-gray-500">$</span>
@@ -358,7 +358,7 @@ const VendorClaimsForm: React.FC = () => {
                     {/* Notes */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Notes
+                            หมายเหตุ
                         </label>
                         <textarea
                             name="notes"
@@ -372,23 +372,15 @@ const VendorClaimsForm: React.FC = () => {
 
                     {/* File Uploads */}
                     <div className="space-y-6">
-                        <FileUploadArea title="Purchase Order" type="purchaseOrder" />
-                        <FileUploadArea title="Invoice File" type="invoice" required />
-                        <FileUploadArea title="Proof of Delivery" type="proofOfDelivery" required />
+                        <FileUploadArea title="ใบสั่งซื้อ" type="purchaseOrder" />
+                        <FileUploadArea title="ไฟล์ใบแจ้งหนี้" type="invoice" required />
+                        <FileUploadArea title="หลักฐานการส่งมอบ" type="proofOfDelivery" required />
                     </div>
 
                     {/* Terms and Conditions */}
                     <div className="bg-gray-50 p-6 rounded-lg">
                         <p className="text-sm text-gray-700 mb-4">
-                            Erewhon&apos;s goal is to pay its Vendor Community accurately the first time. If a
-                            Vendor feels it was short paid or if there is a skipped invoice, a Vendor Claim
-                            inquiry needs to be submitted using this portal no later than 90 days after the
-                            payment date. This will allow our Accounts Payable team to efficiently log, track
-                            and investigate each issue completely. Upon completion of the investigation, a
-                            response inclusive of any supporting documentation will be emailed to the
-                            address provided in the original claim. If a payment/repayment is required, the
-                            amount determined to be due will be paid on Erewhon&apos;s next weekly AP check
-                            run. Thank you!
+                            เป้าหมายของ Erewhon คือการชำระเงินให้กับชุมชนผู้ขายอย่างถูกต้องตั้งแต่ครั้งแรก หากผู้ขายรู้สึกว่าได้รับการชำระเงินน้อยไปหรือมีใบแจ้งหนี้ที่ถูกข้าม ผู้ขายจำเป็นต้องส่งคำขอเคลมผ่านพอร์ทัลนี้ไม่เกิน 90 วันหลังจากวันที่ชำระเงิน สิ่งนี้จะช่วยให้ทีมบัญชีเจ้าหนี้ของเราสามารถบันทึก ติดตาม และตรวจสอบปัญหาแต่ละเรื่องได้อย่างครบถ้วนและมีประสิทธิภาพ เมื่อการตรวจสอบเสร็จสิ้น การตอบกลับพร้อมเอกสารสนับสนุนจะถูกส่งไปยังที่อยู่อีเมลที่ระบุในการเคลมเดิม หากจำเป็นต้องมีการชำระเงิน/ชำระเงินคืน จำนวนเงินที่กำหนดว่าต้องจ่ายจะถูกชำระในรอบการออกเช็คประจำสัปดาห์ถัดไปของ Erewhon ขอบคุณครับ!
                         </p>
 
                         <div className="flex items-start space-x-3">
@@ -400,9 +392,9 @@ const VendorClaimsForm: React.FC = () => {
                                 className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                             <label className="text-sm text-gray-700">
-                                <span className="font-medium">Terms of Service*</span>
+                                <span className="font-medium">เงื่อนไขการให้บริการ*</span>
                                 <br />
-                                I have read the above
+                                ข้าพเจ้าได้อ่านข้อความข้างต้นแล้ว
                             </label>
                         </div>
                         {errors.termsAccepted && (
@@ -416,7 +408,7 @@ const VendorClaimsForm: React.FC = () => {
                             type="submit"
                             className="bg-black text-white px-8 py-3 rounded-md font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
                         >
-                            Submit Form
+                            ส่งแบบฟอร์ม
                         </button>
                     </div>
                 </form>

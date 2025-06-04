@@ -17,12 +17,12 @@ interface FormData {
 }
 
 const giftCardAmounts = [
-    '$25',
-    '$50',
-    '$75',
-    '$100',
-    '$150',
-    '$200'
+    '฿850',     // ~$25
+    '฿1,700',   // ~$50
+    '฿2,550',   // ~$75
+    '฿3,400',   // ~$100
+    '฿5,100',   // ~$150
+    '฿6,800'    // ~$200
 ]
 
 export default function GiftCardForm() {
@@ -35,8 +35,8 @@ export default function GiftCardForm() {
         recipientLastName: '',
         recipientEmail: '',
         confirmRecipientEmail: '',
-        giftCardType: 'Emailed E-Gift Card',
-        giftCardAmount: '$25',
+        giftCardType: 'บัตรของขวัญอิเล็กทรอนิกส์ทางอีเมล',
+        giftCardAmount: '฿850',
         giftCardMessage: ''
     })
 
@@ -62,43 +62,41 @@ export default function GiftCardForm() {
         const newErrors: Partial<FormData> = {}
 
         // Required field validation
-        if (!formData.senderFirstName) newErrors.senderFirstName = 'First name is required'
-        if (!formData.senderLastName) newErrors.senderLastName = 'Last name is required'
-        if (!formData.senderEmail) newErrors.senderEmail = 'Email is required'
-        if (!formData.confirmSenderEmail) newErrors.confirmSenderEmail = 'Please confirm email'
-        if (!formData.recipientFirstName) newErrors.recipientFirstName = 'First name is required'
-        if (!formData.recipientLastName) newErrors.recipientLastName = 'Last name is required'
-        if (!formData.recipientEmail) newErrors.recipientEmail = 'Email is required'
-        if (!formData.confirmRecipientEmail) newErrors.confirmRecipientEmail = 'Please confirm email'
+        if (!formData.senderFirstName) newErrors.senderFirstName = 'กรุณากรอกชื่อ'
+        if (!formData.senderLastName) newErrors.senderLastName = 'กรุณากรอกนามสกุล'
+        if (!formData.senderEmail) newErrors.senderEmail = 'กรุณากรอกอีเมล'
+        if (!formData.confirmSenderEmail) newErrors.confirmSenderEmail = 'กรุณายืนยันอีเมล'
+        if (!formData.recipientFirstName) newErrors.recipientFirstName = 'กรุณากรอกชื่อ'
+        if (!formData.recipientLastName) newErrors.recipientLastName = 'กรุณากรอกนามสกุล'
+        if (!formData.recipientEmail) newErrors.recipientEmail = 'กรุณากรอกอีเมล'
+        if (!formData.confirmRecipientEmail) newErrors.confirmRecipientEmail = 'กรุณายืนยันอีเมล'
 
         // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (formData.senderEmail && !emailRegex.test(formData.senderEmail)) {
-            newErrors.senderEmail = 'Please enter a valid email'
+            newErrors.senderEmail = 'กรุณากรอกอีเมลที่ถูกต้อง'
         }
         if (formData.recipientEmail && !emailRegex.test(formData.recipientEmail)) {
-            newErrors.recipientEmail = 'Please enter a valid email'
+            newErrors.recipientEmail = 'กรุณากรอกอีเมลที่ถูกต้อง'
         }
 
         // Email confirmation validation
         if (formData.senderEmail !== formData.confirmSenderEmail) {
-            newErrors.confirmSenderEmail = 'Emails do not match'
+            newErrors.confirmSenderEmail = 'อีเมลไม่ตรงกัน'
         }
         if (formData.recipientEmail !== formData.confirmRecipientEmail) {
-            newErrors.confirmRecipientEmail = 'Emails do not match'
+            newErrors.confirmRecipientEmail = 'อีเมลไม่ตรงกัน'
         }
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-
+    const handleSubmit = () => {
         if (validateForm()) {
             console.log('Form submitted:', formData)
             // Handle form submission here
-            alert('Gift card order submitted successfully!')
+            alert('ส่งคำสั่งซื้อบัตรของขวัญเรียบร้อยแล้ว!')
         }
     }
 
@@ -106,26 +104,25 @@ export default function GiftCardForm() {
         <div className="min-h-screen bg-gray-900 pt-20">
             <div className="max-w-4xl mx-auto p-6">
                 <div className="mb-8">
-                    <h1 className="text-4xl font-light text-white mb-4">Gift Cards</h1>
+                    <h1 className="text-4xl font-light text-white mb-4">บัตรของขวัญ</h1>
                     <p className="text-gray-300 leading-relaxed">
-                        Give the gift of Erewhon! Purchase and send an electronic gift card today. Erewhon gift cards can be redeemed in-store only at any Erewhon location. For more information contact{' '}
+                        มอบของขวัญแห่งความสุขจาก Erewhon! ซื้อและส่งบัตรของขวัญอิเล็กทรอนิกส์วันนี้ บัตรของขวัญ Erewhon สามารถใช้ได้ที่ร้านเท่านั้น ณ สาขา Erewhon ทุกแห่ง หากต้องการข้อมูลเพิ่มเติม ติดต่อ{' '}
                         <a href="mailto:customerservice@erefmkt.com" className="underline text-blue-400 hover:text-blue-300">
                             customerservice@erefmkt.com
                         </a>
-                        .
                     </p>
                 </div>
 
                 <hr className="border-gray-600 mb-8" />
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-8">
                     {/* Sender Information */}
                     <div>
-                        <h2 className="text-xl font-medium text-white mb-6">Sender Information:</h2>
+                        <h2 className="text-xl font-medium text-white mb-6">ข้อมูลผู้ส่ง:</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label htmlFor="senderFirstName" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Sender First Name
+                                    ชื่อผู้ส่ง
                                 </label>
                                 <input
                                     type="text"
@@ -143,7 +140,7 @@ export default function GiftCardForm() {
 
                             <div>
                                 <label htmlFor="senderLastName" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Sender Last Name
+                                    นามสกุลผู้ส่ง
                                 </label>
                                 <input
                                     type="text"
@@ -161,7 +158,7 @@ export default function GiftCardForm() {
 
                             <div>
                                 <label htmlFor="senderEmail" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Sender Email Address
+                                    อีเมลผู้ส่ง
                                 </label>
                                 <input
                                     type="email"
@@ -179,7 +176,7 @@ export default function GiftCardForm() {
 
                             <div>
                                 <label htmlFor="confirmSenderEmail" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Confirm Sender Email Address
+                                    ยืนยันอีเมลผู้ส่ง
                                 </label>
                                 <input
                                     type="email"
@@ -199,11 +196,11 @@ export default function GiftCardForm() {
 
                     {/* Recipient Information */}
                     <div>
-                        <h2 className="text-xl font-medium text-white mb-6">Recipient Information:</h2>
+                        <h2 className="text-xl font-medium text-white mb-6">ข้อมูลผู้รับ:</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label htmlFor="recipientFirstName" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Recipient First Name
+                                    ชื่อผู้รับ
                                 </label>
                                 <input
                                     type="text"
@@ -221,7 +218,7 @@ export default function GiftCardForm() {
 
                             <div>
                                 <label htmlFor="recipientLastName" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Recipient Last Name
+                                    นามสกุลผู้รับ
                                 </label>
                                 <input
                                     type="text"
@@ -239,7 +236,7 @@ export default function GiftCardForm() {
 
                             <div>
                                 <label htmlFor="recipientEmail" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Recipient Email Address
+                                    อีเมลผู้รับ
                                 </label>
                                 <input
                                     type="email"
@@ -257,7 +254,7 @@ export default function GiftCardForm() {
 
                             <div>
                                 <label htmlFor="confirmRecipientEmail" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Confirm Recipient Email Address
+                                    ยืนยันอีเมลผู้รับ
                                 </label>
                                 <input
                                     type="email"
@@ -277,11 +274,11 @@ export default function GiftCardForm() {
 
                     {/* Gift Card Info */}
                     <div>
-                        <h2 className="text-xl font-medium text-white mb-6">Gift Card Info:</h2>
+                        <h2 className="text-xl font-medium text-white mb-6">ข้อมูลบัตรของขวัญ:</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label htmlFor="giftCardType" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Gift Card Type
+                                    ประเภทบัตรของขวัญ
                                 </label>
                                 <select
                                     id="giftCardType"
@@ -290,14 +287,14 @@ export default function GiftCardForm() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
                                 >
-                                    <option value="Emailed E-Gift Card">Emailed E-Gift Card</option>
-                                    <option value="Physical Gift Card">Physical Gift Card</option>
+                                    <option value="บัตรของขวัญอิเล็กทรอนิกส์ทางอีเมล">บัตรของขวัญอิเล็กทรอนิกส์ทางอีเมล</option>
+                                    <option value="บัตรของขวัญแบบกระดาษ">บัตรของขวัญแบบกระดาษ</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label htmlFor="giftCardAmount" className="block text-sm font-medium text-gray-300 mb-2">
-                                    Gift Card Amount
+                                    จำนวนเงินในบัตรของขวัญ
                                 </label>
                                 <select
                                     id="giftCardAmount"
@@ -317,7 +314,7 @@ export default function GiftCardForm() {
 
                         <div className="mt-6">
                             <label htmlFor="giftCardMessage" className="block text-sm font-medium text-gray-300 mb-2">
-                                Gift Card Message (optional)
+                                ข้อความในบัตรของขวัญ (ไม่บังคับ)
                             </label>
                             <textarea
                                 id="giftCardMessage"
@@ -326,7 +323,7 @@ export default function GiftCardForm() {
                                 onChange={handleInputChange}
                                 rows={4}
                                 className="w-full px-3 py-2 bg-gray-800 text-white border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:border-white placeholder-gray-400"
-                                placeholder="Add a personal message to your gift card..."
+                                placeholder="เพิ่มข้อความส่วนตัวในบัตรของขวัญของคุณ..."
                             />
                         </div>
                     </div>
@@ -334,13 +331,14 @@ export default function GiftCardForm() {
                     {/* Submit Button */}
                     <div className="flex justify-center pt-6">
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={handleSubmit}
                             className="bg-white text-gray-900 px-8 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white focus:ring-offset-gray-900"
                         >
-                            Submit
+                            ส่งข้อมูล
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     )
