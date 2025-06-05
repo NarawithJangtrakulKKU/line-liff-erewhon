@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
 import axios from 'axios'
@@ -341,18 +342,13 @@ export default function PaymentSuccess() {
           <CardContent className="p-8">
             {/* Customer Info */}
             <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
-              <div className="relative">
-                <Image
-                  src={profile?.pictureUrl || '/api/placeholder/60/60'}
-                  alt="Profile"
-                  width={60}
-                  height={60}
-                  className="w-15 h-15 rounded-full object-cover border-4 border-white shadow-lg"
-                />
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <CheckCircle className="h-3 w-3 text-white" />
-                </div>
-              </div>
+              <Image
+                src={profile.pictureUrl || '/api/placeholder/48/48'}
+                alt="Profile"
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded-full border-2 border-green-200"
+              />
               <div>
                 <div className="font-semibold text-gray-900">
                   สวัสดี คุณ{profile.displayName}! 👋

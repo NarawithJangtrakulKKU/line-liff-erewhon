@@ -1,6 +1,6 @@
 // /api/reviews/upload-media/route.ts (Enhanced Version)
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import { existsSync } from 'fs'
 import { generateVideoThumbnail, validateVideo } from '@/lib/videoUtils'
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
         
         if (!validation.valid) {
           // Delete uploaded file
-          await fs.unlink(filePath).catch(() => {})
+          await unlink(filePath).catch(() => {})
           
           return NextResponse.json(
             { 
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Error processing video:', error)
         // Delete uploaded file
-        await fs.unlink(filePath).catch(() => {})
+        await unlink(filePath).catch(() => {})
         
         return NextResponse.json(
           { 
@@ -209,6 +209,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    const fs = await import('fs/promises')
     const filesToDelete = [fileUrl]
     
     if (thumbnailUrl && thumbnailUrl !== '/images/video-placeholder.jpg') {

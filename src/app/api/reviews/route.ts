@@ -1,39 +1,28 @@
 // /api/reviews/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import { z } from 'zod'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 
 const prisma = new PrismaClient()
 
-// Validation schema
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const createReviewSchema = z.object({
-  userId: z.string().min(1, 'User ID is required'),
-  productId: z.string().min(1, 'Product ID is required'),
-  orderId: z.string().min(1, 'Order ID is required'),
-  rating: z.number().min(1).max(5, 'Rating must be between 1 and 5'),
-  comment: z.string().nullable().optional(),
-  mediaFiles: z.array(z.object({
-    mediaType: z.enum(['IMAGE', 'VIDEO']),
-    mediaUrl: z.string().min(1, 'Media URL is required').refine(
-      (url) => url.startsWith('http') || url.startsWith('/'),
-      'Invalid media URL format'
-    ),
-    thumbnailUrl: z.union([
-      z.string().refine(
-        (url) => url.startsWith('http') || url.startsWith('/'),
-        'Invalid thumbnail URL format'
-      ),
-      z.null()
-    ]).optional(),
-    fileName: z.string().optional(),
-    fileSize: z.number().optional(),
-    duration: z.number().optional(), // for videos
-    altText: z.string().optional()
-  })).optional().default([])
-})
+interface MediaFile {
+  mediaType: 'IMAGE' | 'VIDEO'
+  mediaUrl: string
+  fileName: string
+  fileSize: number
+  sortOrder: number
+}
+
+interface MediaFileInput {
+  mediaType: string;
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  fileName: string;
+  fileSize: number;
+  duration?: number;
+  altText?: string;
+}
 
 // GET - Fetch reviews for a product
 export async function GET(request: NextRequest) {
@@ -230,8 +219,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process uploaded media files
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mediaFiles: any[] = []
+    const mediaFiles: MediaFile[] = []
     const uploadedFiles: File[] = []
     
     // Collect all uploaded files
@@ -437,8 +425,7 @@ export async function PUT(request: NextRequest) {
           comment,
           ...(mediaFiles && mediaFiles.length > 0 && {
             mediaFiles: {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              create: mediaFiles.map((media: any, index: number) => ({
+              create: mediaFiles.map((media: MediaFileInput, index: number) => ({
                 mediaType: media.mediaType,
                 mediaUrl: media.mediaUrl,
                 thumbnailUrl: media.thumbnailUrl,

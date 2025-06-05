@@ -35,7 +35,7 @@ export default function ContactPressPage() {
         e.preventDefault();
 
         if (formData.email !== formData.confirmEmail) {
-            alert('Email addresses do not match. Please check and try again.');
+            alert('อีเมลไม่ตรงกัน กรุณาตรวจสอบและลองใหม่อีกครั้ง');
             return;
         }
 
@@ -44,7 +44,7 @@ export default function ContactPressPage() {
             timestamp: new Date().toISOString()
         });
 
-        alert('Thank you! Your press inquiry has been submitted successfully.');
+        alert('ขอบคุณครับ! คำขอสอบถามข้อมูลสื่อของคุณได้รับการส่งเรียบร้อยแล้ว');
 
         setFormData({
             newsSource: '',
@@ -65,7 +65,7 @@ export default function ContactPressPage() {
                         <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-wider">
                             EREWHON
                         </h1>
-                        <h2 className="text-xl font-semibold text-gray-800">PRESS INQUIRIES</h2>
+                        <h2 className="text-xl font-semibold text-gray-800">การสอบถามข้อมูลสื่อ</h2>
                     </div>
 
                     {/* Form */}
@@ -73,7 +73,7 @@ export default function ContactPressPage() {
                         {/* News Source */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                News Source*
+                                แหล่งข่าว*
                             </label>
                             <input
                                 type="text"
@@ -88,7 +88,7 @@ export default function ContactPressPage() {
                         {/* Article Brief */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Article Brief*
+                                สาระสำคัญของบทความ*
                             </label>
                             <textarea
                                 name="articleBrief"
@@ -103,7 +103,7 @@ export default function ContactPressPage() {
                         {/* Questions for Review */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Questions for Review*
+                                คำถามที่ต้องการให้ตรวจสอบ*
                             </label>
                             <textarea
                                 name="questionsForReview"
@@ -118,7 +118,7 @@ export default function ContactPressPage() {
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Email*
+                                อีเมล*
                             </label>
                             <input
                                 type="email"
@@ -133,7 +133,7 @@ export default function ContactPressPage() {
                         {/* Confirm Email */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Confirm Email*
+                                ยืนยันอีเมล*
                             </label>
                             <input
                                 type="email"
@@ -148,7 +148,7 @@ export default function ContactPressPage() {
                         {/* Deadline */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Deadline*
+                                กำหนดส่ง*
                             </label>
                             <input
                                 type="date"
@@ -166,14 +166,14 @@ export default function ContactPressPage() {
                                 type="submit"
                                 className="w-full bg-black text-white py-4 px-6 rounded-md font-medium text-lg hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                             >
-                                Submit Form
+                                ส่งแบบฟอร์ม
                             </button>
                         </div>
                     </form>
 
                     {/* Footer Note */}
                     <div className="mt-8 text-center text-sm text-gray-500">
-                        <p>All fields marked with * are required</p>
+                        <p>ช่องที่มีเครื่องหมาย * จำเป็นต้องกรอก</p>
                     </div>
                 </div>
             </div>

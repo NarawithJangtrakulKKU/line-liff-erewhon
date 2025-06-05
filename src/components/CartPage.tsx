@@ -78,8 +78,6 @@ export default function CartPage() {
     total: 0,
     itemCount: 0
   })
-  // const [promoCode] = useState('')
-  // const [applyingPromo, setApplyingPromo] = useState(false)
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -189,12 +187,6 @@ export default function CartPage() {
       setUpdating(null)
     }
   }, [cartItems])
-
-  // Apply promo code - commented out as not currently used
-  // const applyPromoCode = useCallback(async () => {
-  //   if (!promoCode.trim()) return
-  //   // Implementation would go here
-  // }, [promoCode])
 
   // Handle checkout
   const handleCheckout = () => {
@@ -512,33 +504,6 @@ export default function CartPage() {
                   ))}
                 </CardContent>
               </Card>
-
-              {/* Promo Code */}
-              {/* <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Gift className="h-5 w-5 text-orange-500" />
-                    รหัสส่วนลด
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="ใส่รหัสส่วนลด"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={applyPromoCode}
-                      disabled={!promoCode.trim() || applyingPromo}
-                      className="bg-orange-500 hover:bg-orange-600"
-                    >
-                      {applyingPromo ? 'กำลังใช้...' : 'ใช้รหัส'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card> */}
             </div>
 
             {/* Order Summary */}

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -100,6 +101,8 @@ export default function CategoriesPage({ categoryId }: CategoriesPageProps) {
                     width={200}
                     height={200}
                     className="w-full h-full object-cover rounded-lg sm:rounded-xl transition-transform duration-300 group-hover:scale-105"
+                    width={100}
+                    height={100}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = '/images/placeholder.png';

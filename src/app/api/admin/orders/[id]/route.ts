@@ -1,8 +1,20 @@
 // app/api/admin/orders/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient, OrderStatus, PaymentStatus, PaymentMethod, ShippingMethod } from '@prisma/client'
 
 const prisma = new PrismaClient()
+
+interface OrderUpdateData {
+  status?: OrderStatus
+  paymentStatus?: PaymentStatus
+  paymentMethod?: PaymentMethod | null
+  shippingMethod?: ShippingMethod | null
+  trackingNumber?: string | null
+  notes?: string | null
+  shippedAt?: Date
+  deliveredAt?: Date
+  updatedAt?: Date
+}
 
 // GET /api/admin/orders/[id] - ดึงข้อมูลออเดอร์เฉพาะ
 export async function GET(
@@ -122,7 +134,7 @@ export async function PUT(
     }
 
     // อัปเดตข้อมูลออเดอร์
-    const updateData: Prisma.OrderUpdateInput = {}
+    const updateData: OrderUpdateData = {}
     
     if (status) updateData.status = status
     if (paymentStatus) updateData.paymentStatus = paymentStatus

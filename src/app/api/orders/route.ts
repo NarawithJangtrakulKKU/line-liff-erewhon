@@ -9,9 +9,33 @@ interface OrderItem {
 
 const prisma = new PrismaClient()
 
+interface OrderItem {
+  productId: string
+  quantity: number
+  price: number
+}
+
+interface OrderSummary {
+  subtotal: number
+  shipping: number
+  tax: number
+  total: number
+  discount?: number
+}
+
+interface OrderData {
+  userId: string
+  addressId: string
+  items: OrderItem[]
+  summary: OrderSummary
+  paymentMethod: string
+  shippingMethod: string
+  notes?: string
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json()
+    const data: OrderData = await req.json()
     
     // Validate shipping method
     if (!data.shippingMethod || !['TH_POST', 'TH_EXPRESS'].includes(data.shippingMethod)) {

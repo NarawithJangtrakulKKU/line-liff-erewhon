@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import AdminSidebar from '@/components/AdminSidebar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -103,16 +103,6 @@ export default function AdminAnalyticsPage() {
   const [salesPeriod, setSalesPeriod] = useState('month')
   const [activeTab, setActiveTab] = useState('overview')
 
-  useEffect(() => {
-    fetchAnalyticsData()
-  }, [])
-
-  useEffect(() => {
-    if (activeTab === 'sales') {
-      fetchSalesData()
-    }
-  }, [activeTab, salesPeriod]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true)
@@ -128,7 +118,7 @@ export default function AdminAnalyticsPage() {
     }
   }
 
-  const fetchSalesData = async () => {
+  const fetchSalesData = useCallback(async () => {
     try {
       const response = await axios.get(`/api/admin/analytics/sales?period=${salesPeriod}`)
       
@@ -138,7 +128,17 @@ export default function AdminAnalyticsPage() {
     } catch (error) {
       console.error('Error fetching sales data:', error)
     }
-  }
+  }, [salesPeriod])
+
+  useEffect(() => {
+    fetchAnalyticsData()
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'sales') {
+      fetchSalesData()
+    }
+  }, [activeTab, salesPeriod, fetchSalesData])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('th-TH', {

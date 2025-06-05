@@ -58,9 +58,8 @@ export default function AllCategoriesPage() {
                         <Image 
                             src="/images/carousel/pexels-ash-craig-122861-376464.jpg" 
                             alt="The Cafe" 
-                            width={400}
-                            height={300}
-                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                            fill
+                            className="object-cover transition-transform duration-300 hover:scale-105" 
                         />
                     </div>
                 </a>
@@ -69,9 +68,8 @@ export default function AllCategoriesPage() {
                         <Image 
                             src="/images/carousel/pexels-ella-olsson-572949-1640777.jpg" 
                             alt="The Tonic Bar" 
-                            width={400}
-                            height={300}
-                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                            fill
+                            className="object-cover transition-transform duration-300 hover:scale-105" 
                         />
                     </div>
                 </a>

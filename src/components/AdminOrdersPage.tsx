@@ -399,7 +399,7 @@ const OrderDetailsModal = React.memo(({
                         <Image
                           src={order.paymentSlipUrl}
                           alt="Payment slip"
-                          width={300}
+                          width={288}
                           height={200}
                           className="max-w-xs border rounded"
                         />

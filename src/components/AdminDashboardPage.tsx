@@ -67,6 +67,14 @@ interface Category {
   }
 }
 
+interface Product {
+  id: string;
+  name: string;
+  price: string | number;
+  stock: number;
+  images?: Array<{ imageUrl: string }>;
+}
+
 // Helper functions
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('th-TH', {
@@ -100,7 +108,7 @@ const getStatusConfig = (status: string) => {
 const getStatusBadge = (status: string) => {
   const config = getStatusConfig(status)
   return (
-    <Badge variant={config.variant as "default" | "destructive" | "outline" | "secondary"} className={config.className}>
+    <Badge variant={config.variant as "default" | "secondary" | "destructive" | "outline"} className={config.className}>
       {config.label}
     </Badge>
   )
@@ -194,7 +202,7 @@ export default function AdminDashboard() {
         setTopProducts(orderStats.topProducts.slice(0, 5))
       } else {
         // Fallback to recent products
-        const productsWithMockStats = products.slice(0, 5).map((product: { id: string; name: string; images?: { imageUrl: string }[]; price: string; stock: number }, index: number) => ({
+        const productsWithMockStats = products.slice(0, 5).map((product: Product, index: number) => ({
           productId: product.id,
           productName: product.name,
           imageUrl: product.images?.[0]?.imageUrl,

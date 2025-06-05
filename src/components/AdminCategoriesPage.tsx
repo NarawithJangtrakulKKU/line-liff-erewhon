@@ -74,7 +74,7 @@ const CategoryForm = React.memo(({
   uploadingImage,
   imagePreview,
   onImageUpload,
-  onRemoveImage
+  onRemoveImage,
 }: { 
   formData: CategoryFormData;
   setFormData: React.Dispatch<React.SetStateAction<CategoryFormData>>;

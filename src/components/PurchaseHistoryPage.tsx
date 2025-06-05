@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import axios from 'axios'
@@ -161,7 +162,7 @@ const formatFileSize = (bytes: number): string => {
 }
 
 // ฟังก์ชันสำหรับแปลงค่า Decimal เป็น number อย่างปลอดภัย
-const safeNumber = (value: number | string | null | undefined): number => {
+const safeNumber = (value: unknown): number => {
   if (value === null || value === undefined) return 0
   if (typeof value === 'number') return isNaN(value) ? 0 : value
   if (typeof value === 'string') {
@@ -232,7 +233,7 @@ export default function PurchaseHistoryPage() {
               id: order.id,
               total: order.total,
               totalType: typeof order.total,
-              isNaN: isNaN(order.total)
+              isNaN: isNaN(Number(order.total))
             })
           })
         }
@@ -291,13 +292,15 @@ export default function PurchaseHistoryPage() {
     if (orders.length > 0) {
       fetchReviewStatuses()
     }
-  }, [orders, dbUser, fetchReviewStatuses])
+  }, [orders, fetchReviewStatuses])
 
   // ฟังก์ชันเพื่อเช็คว่าสินค้าถูกรีวิวแล้วหรือยัง
   const getReviewStatus = (productId: string, orderId: string): ReviewStatus | null => {
-    return reviewStatuses.find(
+    const status = reviewStatuses.find(
       status => status.productId === productId && status.orderId === orderId
     ) || null
+    
+    return status
   }
 
   const handleViewOrderDetail = (order: Order) => {
@@ -502,7 +505,7 @@ export default function PurchaseHistoryPage() {
   }
 
   const getProductImageUrl = (product: OrderItem['product']) => {
-    return product.images?.[0]?.imageUrl || product.image || undefined
+    return product.images?.[0]?.imageUrl || product.image || ''
   }
 
   const formatPrice = (price: number | string | null | undefined) => {
@@ -729,22 +732,25 @@ export default function PurchaseHistoryPage() {
 
                       {/* Order Items Preview */}
                       <div className="space-y-2 mb-4">
-                        {order.orderItems.slice(0, 2).map((item) => (
-                          <div key={item.id} className="flex items-center gap-3 text-sm">
-                            {getProductImageUrl(item.product) && (
-                              <Image
-                                src={getProductImageUrl(item.product)!}
-                                alt={item.product.name}
-                                width={32}
-                                height={32}
-                                className="w-8 h-8 rounded object-cover"
-                              />
-                            )}
-                            <span className="flex-1">{item.product.name}</span>
-                            <span className="text-gray-500">x{item.quantity}</span>
-                            <span className="font-medium">{formatPrice(item.total)}</span>
-                          </div>
-                        ))}
+                        {order.orderItems.slice(0, 2).map((item) => {
+                          const imageUrl = getProductImageUrl(item.product)
+                          return (
+                            <div key={item.id} className="flex items-center gap-3 text-sm">
+                              {imageUrl && imageUrl !== '' && (
+                                <Image
+                                  src={imageUrl}
+                                  alt={item.product.name}
+                                  width={32}
+                                  height={32}
+                                  className="rounded-lg"
+                                />
+                              )}
+                              <span className="flex-1">{item.product.name}</span>
+                              <span className="text-gray-500">x{item.quantity}</span>
+                              <span className="font-medium">{formatPrice(item.total)}</span>
+                            </div>
+                          )
+                        })}
                         {order.orderItems.length > 2 && (
                           <p className="text-sm text-gray-500 text-center">
                             และอีก {order.orderItems.length - 2} รายการ
@@ -853,28 +859,77 @@ export default function PurchaseHistoryPage() {
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">รายการสินค้า</h4>
                     <div className="space-y-3">
-                      {selectedOrder.orderItems.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          {getProductImageUrl(item.product) && (
-                            <Image
-                              src={getProductImageUrl(item.product)!}
-                              alt={item.product.name}
-                              width={32}
-                              height={32}
-                              className="w-12 h-12 rounded object-cover"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <h5 className="font-medium">{item.product.name}</h5>
-                            <p className="text-sm text-gray-500">
-                              {formatPrice(item.price)} x {item.quantity}
-                            </p>
+                      {selectedOrder.orderItems.map((item) => {
+                        const reviewStatus = getReviewStatus(item.product.id, selectedOrder.id)
+                        const hasReviewed = reviewStatus?.hasReviewed === true
+                        const imageUrl = getProductImageUrl(item.product)
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className={`flex items-center justify-between p-3 rounded-lg border ${
+                              hasReviewed 
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-white border-gray-200 hover:border-orange-300 cursor-pointer'
+                            }`}
+                            onClick={hasReviewed ? undefined : () => handleReviewProduct(item, selectedOrder.id)}
+                          >
+                            <div className="flex items-center gap-3">
+                              {imageUrl && imageUrl !== '' && (
+                                <Image
+                                  src={imageUrl}
+                                  alt={item.product.name}
+                                  width={32}
+                                  height={32}
+                                  className="rounded-lg"
+                                />
+                              )}
+                              <span className="text-left">{item.product.name}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              {hasReviewed ? (
+                                <>
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  <div className="text-right">
+                                    <div className="flex items-center gap-1">
+                                      <StarRating 
+                                        rating={reviewStatus?.rating || 0} 
+                                        readonly={true}
+                                        size="small"
+                                      />
+                                    </div>
+                                    <span className="text-sm text-green-700 font-medium">
+                                      คุณรีวิวแล้ว
+                                    </span>
+                                    {reviewStatus?.reviewDate && (
+                                      <div className="text-xs text-green-600 mt-1">
+                                        {new Date(reviewStatus.reviewDate).toLocaleDateString('th-TH', {
+                                          day: 'numeric',
+                                          month: 'short',
+                                          year: 'numeric'
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </>
+                              ) : loadingReviewStatuses ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400"></div>
+                                  <span className="text-sm text-gray-500">กำลังตรวจสอบ...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Star className="h-4 w-4 text-orange-500" />
+                                  <span className="text-sm text-orange-600 font-medium">
+                                    รีวิว
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium">{formatPrice(item.total)}</p>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
 
@@ -927,7 +982,8 @@ export default function PurchaseHistoryPage() {
                         <div className="grid gap-2">
                           {selectedOrder.orderItems.map((item) => {
                             const reviewStatus = getReviewStatus(item.product.id, selectedOrder.id)
-                            const hasReviewed = reviewStatus?.hasReviewed || false
+                            const hasReviewed = reviewStatus?.hasReviewed === true
+                            const imageUrl = getProductImageUrl(item.product)
                             
                             return (
                               <div
@@ -940,13 +996,13 @@ export default function PurchaseHistoryPage() {
                                 onClick={hasReviewed ? undefined : () => handleReviewProduct(item, selectedOrder.id)}
                               >
                                 <div className="flex items-center gap-3">
-                                  {getProductImageUrl(item.product) && (
+                                  {imageUrl && imageUrl !== '' && (
                                     <Image
-                                      src={getProductImageUrl(item.product)!}
+                                      src={imageUrl}
                                       alt={item.product.name}
                                       width={32}
                                       height={32}
-                                      className="w-8 h-8 rounded object-cover"
+                                      className="rounded-lg"
                                     />
                                   )}
                                   <span className="text-left">{item.product.name}</span>
@@ -1033,15 +1089,18 @@ export default function PurchaseHistoryPage() {
                 <div className="space-y-6">
                   {/* Product Info */}
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    {getProductImageUrl(selectedProduct.product) && (
-                      <Image
-                        src={getProductImageUrl(selectedProduct.product)!}
-                        alt={selectedProduct.product.name}
-                        width={32}
-                        height={32}
-                        className="w-12 h-12 rounded object-cover"
-                      />
-                    )}
+                    {(() => {
+                      const imageUrl = getProductImageUrl(selectedProduct.product)
+                      return imageUrl && imageUrl !== '' && (
+                        <Image
+                          src={imageUrl}
+                          alt={selectedProduct.product.name}
+                          width={48}
+                          height={48}
+                          className="rounded-lg"
+                        />
+                      )
+                    })()}
                     <div>
                       <h4 className="font-medium">{selectedProduct.product.name}</h4>
                       <p className="text-sm text-gray-500">

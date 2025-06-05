@@ -106,7 +106,7 @@ const ProductForm = React.memo(({
   uploadingImage,
   imagePreview,
   onImageUpload,
-  onRemoveImage
+  onRemoveImage,
 }: { 
   formData: ProductFormData;
   setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>;
@@ -414,7 +414,6 @@ export default function AdminProductsPage() {
     images: []
   })
   const [submitting, setSubmitting] = useState(false)
-  const [uploadingImage] = useState(false)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreview, setImagePreview] = useState<string[]>([])
   
@@ -838,7 +837,7 @@ export default function AdminProductsPage() {
                       submitLabel="Create Product" 
                       mode="create"
                       submitting={submitting}
-                      uploadingImage={uploadingImage}
+                      uploadingImage={false}
                       imagePreview={imagePreview}
                       onImageUpload={handleImageUpload}
                       onRemoveImage={handleRemoveImage}
@@ -899,8 +898,8 @@ export default function AdminProductsPage() {
                                 <Image
                                   src={product.images[0].imageUrl}
                                   alt={product.name}
-                                  width={96}
-                                  height={96}
+                                  width={48}
+                                  height={48}
                                   className="w-12 h-12 rounded-lg object-cover"
                                 />
                               ) : (
@@ -1031,7 +1030,7 @@ export default function AdminProductsPage() {
                 submitLabel="Update Product" 
                 mode="edit"
                 submitting={submitting}
-                uploadingImage={uploadingImage}
+                uploadingImage={false}
                 imagePreview={imagePreview}
                 onImageUpload={handleImageUpload}
                 onRemoveImage={handleRemoveImage}

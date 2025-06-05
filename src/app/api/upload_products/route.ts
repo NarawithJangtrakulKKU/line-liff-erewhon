@@ -8,7 +8,6 @@ export async function POST(req: NextRequest) {
 
   const file = formData.get('image') as File;
   const name = formData.get('name') as string;
-  const category = formData.get('category') as string;
   const price = parseFloat(formData.get('price') as string);
 
   if (!file || !file.name) {

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import axios from 'axios'
@@ -249,9 +250,14 @@ export default function MyOrdersPage() {
       console.error('Error cancelling order:', error)
       
       // Show specific error message
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'ไม่สามารถยกเลิกคำสั่งซื้อได้'
+      let errorMessage = 'ไม่สามารถยกเลิกคำสั่งซื้อได้'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } }
+        errorMessage = axiosError.response?.data?.error || errorMessage
+      }
+      
       setErrorMessage(errorMessage)
       setShowErrorModal(true)
     } finally {
@@ -505,9 +511,9 @@ export default function MyOrdersPage() {
                                   <Image
                                     src={item.product.imageUrl}
                                     alt={item.product.name}
-                                    width={64}
-                                    height={64}
-                                    className="w-16 h-16 rounded-lg object-cover"
+                                    width={32}
+                                    height={32}
+                                    className="w-8 h-8 rounded object-cover"
                                   />
                                 )}
                                 <span className="flex-1">{item.product.name}</span>

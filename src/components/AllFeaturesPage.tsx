@@ -89,6 +89,8 @@ export default function AllFeaturesPage() {
                     width={200}
                     height={200}
                     className="w-full h-full object-cover rounded-lg sm:rounded-xl transition-transform duration-300 group-hover:scale-105"
+                    width={128}
+                    height={128}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = '/images/placeholder.png';

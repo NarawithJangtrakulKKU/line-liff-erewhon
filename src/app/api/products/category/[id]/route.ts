@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id } = await params; // Await params
 
     // Validate category ID (optional but good practice)
     if (!id || typeof id !== 'string') {

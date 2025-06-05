@@ -1,8 +1,8 @@
 'use client'
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import axios from 'axios';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Search, ShoppingCart, SlidersHorizontal } from 'lucide-react';
 import {
   Card,
@@ -460,6 +460,8 @@ export default function ProductsPage() {
                           width={192}
                           height={192}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          width={200}
+                          height={200}
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder.png';
                           }}

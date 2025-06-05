@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
 import { 
@@ -203,30 +204,6 @@ export default function CheckoutPage() {
     }
   }, [isInitialized, isLoggedIn, router])
 
-  // Calculate cart summary
-  const calculateSummary = useCallback(() => {
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
-    const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
-    
-    const selectedShippingMethod = shippingMethods.find(method => method.id === selectedShipping)
-    const shipping = selectedShippingMethod?.price || 0
-    
-    const selectedPaymentMethod = paymentMethods.find(method => method.id === selectedPayment)
-    const paymentFee = selectedPaymentMethod?.fee || 0
-    
-    const tax = subtotal * 0.07 // 7% VAT
-    const total = subtotal + shipping + paymentFee + tax
-
-    setCartSummary({
-      subtotal,
-      shipping,
-      paymentFee,
-      tax,
-      total,
-      itemCount
-    })
-  }, [cartItems, selectedShipping, selectedPayment, shippingMethods, paymentMethods])
-
   // Fetch cart items
   const fetchCartItems = useCallback(async () => {
     try {
@@ -268,13 +245,37 @@ export default function CheckoutPage() {
     }
   }, [dbUser])
 
-  // Fetch data
+  // Initial data fetch
   useEffect(() => {
     if (dbUser?.id) {
       fetchCartItems()
       fetchAddresses()
     }
-  }, [dbUser, fetchCartItems, fetchAddresses])
+  }, [dbUser, fetchAddresses, fetchCartItems])
+
+  // Calculate summary when dependencies change
+  const calculateSummary = useCallback(() => {
+    const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+    const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+    
+    const selectedShippingMethod = shippingMethods.find(method => method.id === selectedShipping)
+    const shipping = selectedShippingMethod?.price || 0
+    
+    const selectedPaymentMethod = paymentMethods.find(method => method.id === selectedPayment)
+    const paymentFee = selectedPaymentMethod?.fee || 0
+    
+    const tax = subtotal * 0.07 // 7% VAT
+    const total = subtotal + shipping + paymentFee + tax
+
+    setCartSummary({
+      subtotal,
+      shipping,
+      paymentFee,
+      tax,
+      total,
+      itemCount
+    })
+  }, [cartItems, selectedShipping, selectedPayment, shippingMethods, paymentMethods])
 
   // Calculate summary when dependencies change
   useEffect(() => {
@@ -509,7 +510,7 @@ export default function CheckoutPage() {
                     alt="Profile"
                     width={48}
                     height={48}
-                    className="w-12 h-12 rounded-full"
+                    className="rounded-full"
                   />
                   <div>
                     <div className="font-medium">{profile.displayName}</div>

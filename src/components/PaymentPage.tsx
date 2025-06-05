@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useLiff } from '@/app/contexts/LiffContext'
@@ -8,10 +9,8 @@ import {
   ArrowLeft,
   Upload,
   Camera,
-  X,
   AlertCircle,
   FileImage,
-  Eye,
   Download,
   Copy,
   CheckCircle,
@@ -174,14 +173,6 @@ export default function PaymentPage({ orderId }: PaymentPageProps) {
     if (fileInputRef.current) {
       fileInputRef.current.setAttribute('capture', 'environment')
       fileInputRef.current.click()
-    }
-  }
-
-  const removeImage = () => {
-    setSlipImage(null)
-    setSlipPreview(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
     }
   }
 
@@ -583,30 +574,14 @@ export default function PaymentPage({ orderId }: PaymentPageProps) {
             ) : (
               /* Image Preview */
               <div className="space-y-4">
-                <div className="relative group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={slipPreview}
-                    alt="Payment slip preview"
-                    className="w-full max-h-80 object-contain rounded-xl border shadow-sm"
-                  />
-                  <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setShowImagePreview(true)}
-                      className="bg-white/90 hover:bg-white shadow-md"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={removeImage}
-                      className="bg-red-500/90 hover:bg-red-500 shadow-md"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="relative h-96 w-full">
+                    <Image
+                      src={slipPreview}
+                      alt="Payment slip full view"
+                      fill
+                      className="object-contain rounded-lg"
+                    />
                   </div>
                 </div>
                 
@@ -666,12 +641,14 @@ export default function PaymentPage({ orderId }: PaymentPageProps) {
             {slipPreview && (
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-xl p-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={slipPreview}
-                    alt="Payment slip full view"
-                    className="w-full max-h-96 object-contain rounded-lg"
-                  />
+                  <div className="relative h-96 w-full">
+                    <Image
+                      src={slipPreview}
+                      alt="Payment slip full view"
+                      fill
+                      className="object-contain rounded-lg"
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-2 justify-end">
                   <Button
