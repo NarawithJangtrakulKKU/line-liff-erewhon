@@ -25,18 +25,18 @@ services:
     networks:
       - app-network
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: "postgresql://myuser:mypassword@postgres:5432/mydb?schema=public"
-    depends_on:
-      - postgres
-    networks:
-      - app-network
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     DATABASE_URL: "postgresql://myuser:mypassword@postgres:5432/mydb?schema=public"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - app-network
 
 volumes:
   postgres-data:
