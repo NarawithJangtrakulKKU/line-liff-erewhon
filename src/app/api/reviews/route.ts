@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
+import { pipeline } from 'stream/promises'
+import { createReadStream, createWriteStream } from 'fs'
 
 const prisma = new PrismaClient()
 
@@ -22,6 +24,64 @@ interface MediaFileInput {
   fileSize: number;
   duration?: number;
   altText?: string;
+}
+
+// Helper function to process file with streaming
+async function processFileStreaming(file: File, filePath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const reader = file.stream().getReader()
+    const writeStream = createWriteStream(filePath)
+    
+    const pump = async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          if (!writeStream.write(value)) {
+            await new Promise<void>((drainResolve) => writeStream.once('drain', () => drainResolve()))
+          }
+        }
+        writeStream.end()
+        resolve()
+      } catch (error) {
+        writeStream.destroy()
+        reject(error)
+      }
+    }
+    
+    writeStream.on('error', reject)
+    writeStream.on('finish', () => resolve())
+    pump()
+  })
+}
+
+// Helper function to compress and resize image
+async function processImage(file: File, outputPath: string): Promise<{ size: number }> {
+  try {
+    // For now, just save the file directly
+    // In production, you might want to use sharp or similar for compression
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    await writeFile(outputPath, buffer)
+    return { size: buffer.length }
+  } catch (error) {
+    console.error('Error processing image:', error)
+    throw error
+  }
+}
+
+// Helper function to process video
+async function processVideo(file: File, outputPath: string): Promise<{ size: number }> {
+  try {
+    // Use streaming for large video files
+    await processFileStreaming(file, outputPath)
+    const stats = await import('fs').then(fs => fs.promises.stat(outputPath))
+    return { size: stats.size }
+  } catch (error) {
+    console.error('Error processing video:', error)
+    throw error
+  }
 }
 
 // GET - Fetch reviews for a product
@@ -108,10 +168,11 @@ export async function GET(request: NextRequest) {
 
 // POST - Create a new review
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  const TIMEOUT_MS = 300000 // 5 minutes for video processing
+  
   try {
-    // Set timeout for the entire operation
-    const startTime = Date.now()
-    const TIMEOUT_MS = 120000 // 2 minutes
+    console.log('🚀 Starting review creation process...')
     
     const formData = await request.formData()
     
@@ -138,70 +199,50 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Starting review creation process', {
+    console.log('✅ Basic validation passed', {
       userId,
       productId,
       orderId,
       rating,
-      hasComment: !!comment,
-      timestamp: new Date().toISOString()
+      hasComment: !!comment
     })
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    })
+    // Parallel database validation to speed up checks
+    const [user, product, order] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId } }),
+      prisma.product.findUnique({ where: { id: productId } }),
+      prisma.order.findFirst({
+        where: { 
+          id: orderId,
+          userId: userId,
+          status: 'DELIVERED'
+        },
+        include: {
+          orderItems: {
+            where: { productId: productId }
+          }
+        }
+      })
+    ])
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
-
-    // Check if product exists
-    const product = await prisma.product.findUnique({
-      where: { id: productId }
-    })
 
     if (!product) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // Check if order exists and belongs to user
-    const order = await prisma.order.findFirst({
-      where: { 
-        id: orderId,
-        userId: userId,
-        status: 'DELIVERED' // Only allow reviews for delivered orders
-      },
-      include: {
-        orderItems: {
-          where: { productId: productId }
-        }
-      }
-    })
-
-    if (!order) {
+    if (!order || order.orderItems.length === 0) {
       return NextResponse.json(
         { error: 'Order not found or not eligible for review' },
         { status: 403 }
       )
     }
 
-    if (order.orderItems.length === 0) {
-      return NextResponse.json(
-        { error: 'Product not found in this order' },
-        { status: 403 }
-      )
-    }
-
     const orderItem = order.orderItems[0]
 
-    // Check if review already exists for this order item
+    // Check if review already exists
     const existingReview = await prisma.review.findUnique({
       where: {
         userId_orderItemId: {
@@ -218,6 +259,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('✅ Database validation completed')
+
     // Process uploaded media files
     const mediaFiles: MediaFile[] = []
     const uploadedFiles: File[] = []
@@ -229,93 +272,93 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`Found ${uploadedFiles.length} files to process`)
+    console.log(`📁 Found ${uploadedFiles.length} files to process`)
 
-    // Process each uploaded file
-    for (let i = 0; i < uploadedFiles.length; i++) {
-      const file = uploadedFiles[i]
-      
-      // Check timeout before processing each file
-      if (Date.now() - startTime > TIMEOUT_MS) {
-        return NextResponse.json(
-          { error: 'Request timeout during file processing' },
-          { status: 408 }
-        )
-      }
-      
-      if (file.size === 0) continue
+    if (uploadedFiles.length > 0) {
+      // Process files in parallel for better performance
+      const fileProcessingPromises = uploadedFiles.map(async (file, i) => {
+        // Check timeout before processing each file
+        if (Date.now() - startTime > TIMEOUT_MS) {
+          throw new Error('Request timeout during file processing')
+        }
+        
+        if (file.size === 0) return null
 
-      console.log(`Processing file ${i + 1}/${uploadedFiles.length}:`, {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      })
-
-      // Validate file type and size
-      const isImage = file.type.startsWith('image/')
-      const isVideo = file.type.startsWith('video/')
-      
-      if (!isImage && !isVideo) {
-        console.error(`Invalid file type: ${file.type}`)
-        return NextResponse.json(
-          { error: `File ${file.name} is not a valid image or video` },
-          { status: 400 }
-        )
-      }
-
-      // Check file size limits
-      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024 // 50MB for video, 10MB for image
-      if (file.size > maxSize) {
-        console.error(`File size too large: ${file.size} bytes, max: ${maxSize} bytes`)
-        return NextResponse.json(
-          { error: `File ${file.name} exceeds size limit (${isVideo ? '50MB' : '10MB'})` },
-          { status: 413 }
-        )
-      }
-
-      try {
-        // Create upload directory based on file type
-        const fileTypeDir = isImage ? 'images' : 'videos'
-        const uploadDir = join(process.cwd(), 'public', 'uploads', 'reviews', fileTypeDir)
-        await mkdir(uploadDir, { recursive: true })
-
-        // Generate unique filename
-        const timestamp = Date.now()
-        const randomString = Math.random().toString(36).substring(2, 15)
-        const fileExtension = file.name.split('.').pop()
-        const fileName = `review_${timestamp}_${randomString}.${fileExtension}`
-        const filePath = join(uploadDir, fileName)
-
-        console.log(`Saving file to: ${filePath}`)
-
-        // Convert file to buffer and save
-        const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-        await writeFile(filePath, buffer)
-
-        console.log(`File saved successfully: ${fileName}`)
-
-        // Add to media files array
-        mediaFiles.push({
-          mediaType: isImage ? 'IMAGE' : 'VIDEO',
-          mediaUrl: `/uploads/reviews/${fileTypeDir}/${fileName}`,
-          fileName: file.name,
-          fileSize: file.size,
-          sortOrder: i
+        console.log(`🔄 Processing file ${i + 1}/${uploadedFiles.length}:`, {
+          name: file.name,
+          size: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+          type: file.type
         })
 
-      } catch (error) {
-        console.error('Error uploading file:', error)
-        return NextResponse.json(
-          { error: `Failed to upload file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}` },
-          { status: 500 }
-        )
-      }
+        // Validate file type and size
+        const isImage = file.type.startsWith('image/')
+        const isVideo = file.type.startsWith('video/')
+        
+        if (!isImage && !isVideo) {
+          throw new Error(`Invalid file type: ${file.type}`)
+        }
+
+        // More strict file size limits
+        const maxSize = isVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024 // 20MB for video, 10MB for image
+        if (file.size > maxSize) {
+          throw new Error(`File ${file.name} exceeds size limit (${isVideo ? '20MB' : '10MB'})`)
+        }
+
+        try {
+          // Create upload directory based on file type
+          const fileTypeDir = isImage ? 'images' : 'videos'
+          const uploadDir = join(process.cwd(), 'public', 'uploads', 'reviews', fileTypeDir)
+          await mkdir(uploadDir, { recursive: true })
+
+          // Generate unique filename
+          const timestamp = Date.now()
+          const randomString = Math.random().toString(36).substring(2, 15)
+          const fileExtension = file.name.split('.').pop()
+          const fileName = `review_${timestamp}_${randomString}.${fileExtension}`
+          const filePath = join(uploadDir, fileName)
+
+          console.log(`💾 Saving file: ${fileName}`)
+
+          // Process file based on type
+          let finalSize: number
+          if (isImage) {
+            const result = await processImage(file, filePath)
+            finalSize = result.size
+          } else {
+            const result = await processVideo(file, filePath)
+            finalSize = result.size
+          }
+
+          console.log(`✅ File saved: ${fileName} (${(finalSize / 1024 / 1024).toFixed(2)}MB)`)
+
+          return {
+            mediaType: isImage ? 'IMAGE' : 'VIDEO',
+            mediaUrl: `/uploads/reviews/${fileTypeDir}/${fileName}`,
+            fileName: file.name,
+            fileSize: finalSize,
+            sortOrder: i
+          } as MediaFile
+
+        } catch (error) {
+          console.error(`❌ Error processing file ${file.name}:`, error)
+          throw new Error(`Failed to upload file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
+      })
+
+      // Wait for all files to be processed
+      console.log('⏳ Processing all files in parallel...')
+      const results = await Promise.all(fileProcessingPromises)
+      
+      // Filter out null results and add to mediaFiles
+      results.forEach(result => {
+        if (result) mediaFiles.push(result)
+      })
+
+      console.log(`✅ Successfully processed ${mediaFiles.length} media files`)
     }
 
-    console.log(`Successfully processed ${mediaFiles.length} media files`)
-
-    // Create review with media files
+    // Create review with media files in a transaction for data consistency
+    console.log('�� Creating review in database...')
     const review = await prisma.review.create({
       data: {
         userId,
@@ -324,7 +367,7 @@ export async function POST(request: NextRequest) {
         orderItemId: orderItem.id,
         rating,
         comment,
-        isVerified: true, // Since it's from a delivered order
+        isVerified: true,
         mediaFiles: {
           create: mediaFiles.map((media, index) => ({
             mediaType: media.mediaType,
@@ -348,10 +391,14 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    const totalTime = Date.now() - startTime
+    console.log(`🎉 Review created successfully in ${totalTime}ms`)
+
     return NextResponse.json({
       success: true,
       review,
-      message: 'Review created successfully'
+      message: 'Review created successfully',
+      processingTime: totalTime
     }, { 
       status: 201,
       headers: {
@@ -361,13 +408,14 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error creating review:', error)
+    const totalTime = Date.now() - startTime
+    console.error(`❌ Error creating review after ${totalTime}ms:`, error)
     
-    // Check if it's a timeout or size error
+    // Enhanced error handling
     if (error instanceof Error) {
       if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
         return NextResponse.json(
-          { error: 'Request timeout - ลองลดขนาดไฟล์หรือจำนวนไฟล์', details: error.message },
+          { error: 'Request timeout - กรุณาลดขนาดไฟล์หรือจำนวนไฟล์', details: error.message },
           { status: 408 }
         )
       }
@@ -377,10 +425,26 @@ export async function POST(request: NextRequest) {
           { status: 507 }
         )
       }
+      if (error.message.includes('size limit') || error.message.includes('exceeds')) {
+        return NextResponse.json(
+          { error: 'ไฟล์มีขนาดใหญ่เกินไป - กรุณาลดขนาดไฟล์', details: error.message },
+          { status: 413 }
+        )
+      }
+      if (error.message.includes('ECONNRESET') || error.message.includes('aborted')) {
+        return NextResponse.json(
+          { error: 'การเชื่อมต่อถูกยกเลิก - กรุณาลองใหม่อีกครั้ง', details: error.message },
+          { status: 499 }
+        )
+      }
     }
     
     return NextResponse.json(
-      { error: 'Failed to create review', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Failed to create review', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        processingTime: totalTime
+      },
       { status: 500 }
     )
   }

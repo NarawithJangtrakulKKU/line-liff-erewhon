@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -240,6 +241,10 @@ export default function AdminCategoriesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  
+  // Bulk delete states
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   
   // Notification modal states
   const [showNotificationModal, setShowNotificationModal] = useState(false)
@@ -469,6 +474,80 @@ export default function AdminCategoriesPage() {
     }
   }, [categories, showNotification])
 
+  // Bulk selection handlers
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedCategories(new Set(filteredCategories.map(cat => cat.id)))
+    } else {
+      setSelectedCategories(new Set())
+    }
+  }, [filteredCategories])
+
+  const handleSelectCategory = useCallback((categoryId: string, checked: boolean) => {
+    setSelectedCategories(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(categoryId)
+      } else {
+        newSet.delete(categoryId)
+      }
+      return newSet
+    })
+  }, [])
+
+  // Bulk delete handler
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedCategories.size === 0) return
+
+    try {
+      setBulkDeleting(true)
+
+      // Get categories to delete (for image cleanup)
+      const categoriesToDelete = categories.filter(cat => selectedCategories.has(cat.id))
+      
+      // Delete categories
+      await Promise.all(
+        Array.from(selectedCategories).map(categoryId =>
+          axios.delete(`/api/admin/categories/${categoryId}`)
+        )
+      )
+
+      // Clean up images (if any)
+      const imageCleanupPromises = categoriesToDelete
+        .filter(cat => cat.imageUrl)
+        .map(cat => 
+          axios.delete(`/api/admin/upload-image?imageUrl=${encodeURIComponent(cat.imageUrl!)}`)
+            .catch(error => console.error('Error deleting image:', error))
+        )
+
+      await Promise.all(imageCleanupPromises)
+
+      // Update categories list
+      setCategories(prev => prev.filter(cat => !selectedCategories.has(cat.id)))
+      setSelectedCategories(new Set())
+      
+      showNotification(
+        'success', 
+        'Success', 
+        `Successfully deleted ${selectedCategories.size} categor${selectedCategories.size === 1 ? 'y' : 'ies'}`
+      )
+    } catch (error) {
+      console.error('Error bulk deleting categories:', error)
+      showNotification(
+        'error',
+        'Error',
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || "Failed to delete categories"
+          : "An error occurred while deleting categories"
+      )
+    } finally {
+      setBulkDeleting(false)
+    }
+  }, [selectedCategories, categories, showNotification])
+
+  // Check if all filtered categories are selected
+  const isAllSelected = filteredCategories.length > 0 && filteredCategories.every(cat => selectedCategories.has(cat.id))
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -538,36 +617,74 @@ export default function AdminCategoriesPage() {
                   />
                 </div>
                 
-                <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={resetForm}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Category
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Create New Category</DialogTitle>
-                      <DialogDescription>
-                        Add a new product category to organize your inventory.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <CategoryForm 
-                      formData={formData}
-                      setFormData={setFormData}
-                      onSubmit={handleCreate} 
-                      submitLabel="Create Category" 
-                      mode="create"
-                      submitting={submitting}
-                      uploadingImage={uploadingImage}
-                      imagePreview={imagePreview}
-                      setImagePreview={setImagePreview}
-                      onImageUpload={handleImageUpload}
-                      onRemoveImage={handleRemoveImage}
-                      showNotification={showNotification}
-                    />
-                  </DialogContent>
-                </Dialog>
+                <div className="flex items-center gap-2">
+                  {/* Bulk Delete Button */}
+                  {selectedCategories.size > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={bulkDeleting}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedCategories.size})`}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Multiple Categories</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete {selectedCategories.size} selected categor{selectedCategories.size === 1 ? 'y' : 'ies'}? This action cannot be undone.
+                            {categories
+                              .filter(cat => selectedCategories.has(cat.id))
+                              .some(cat => cat._count?.products && cat._count.products > 0) && (
+                              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                <strong>Warning:</strong> Some selected categories have products associated with them.
+                              </div>
+                            )}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleBulkDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete All Selected
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                    <DialogTrigger asChild>
+                      <Button onClick={resetForm}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Category
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Create New Category</DialogTitle>
+                        <DialogDescription>
+                          Add a new product category to organize your inventory.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <CategoryForm 
+                        formData={formData}
+                        setFormData={setFormData}
+                        onSubmit={handleCreate} 
+                        submitLabel="Create Category" 
+                        mode="create"
+                        submitting={submitting}
+                        uploadingImage={uploadingImage}
+                        imagePreview={imagePreview}
+                        setImagePreview={setImagePreview}
+                        onImageUpload={handleImageUpload}
+                        onRemoveImage={handleRemoveImage}
+                        showNotification={showNotification}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -578,6 +695,11 @@ export default function AdminCategoriesPage() {
               <CardTitle>Categories ({filteredCategories.length})</CardTitle>
               <CardDescription>
                 Manage and organize your product categories
+                {selectedCategories.size > 0 && (
+                  <span className="ml-2 text-blue-600 font-medium">
+                    ({selectedCategories.size} selected)
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -603,6 +725,12 @@ export default function AdminCategoriesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={isAllSelected}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Description</TableHead>
                         <TableHead>Status</TableHead>
@@ -614,7 +742,13 @@ export default function AdminCategoriesPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredCategories.map((category) => (
-                        <TableRow key={category.id}>
+                        <TableRow key={category.id} className={selectedCategories.has(category.id) ? "bg-blue-50" : ""}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedCategories.has(category.id)}
+                              onCheckedChange={(checked) => handleSelectCategory(category.id, checked as boolean)}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                               {category.imageUrl && (

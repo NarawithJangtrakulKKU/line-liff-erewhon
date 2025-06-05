@@ -11,7 +11,9 @@ import {
   LogOut,
   Menu,
   X,
-  ChartPie
+  ChartPie,
+  Star,
+  ChartBar
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -90,6 +92,16 @@ export default function AdminSidebar({ isMobile = false }: AdminSidebarProps) {
         href: '/admin/orders',
         icon: <Package className="h-5 w-5" />
     },
+    {
+      title: 'Reviews',
+      href: '/admin/reviews',
+      icon: <Star className="h-5 w-5" />
+    },
+    {
+      title: 'Reports',
+      href: '/admin/reports',
+      icon: <ChartBar className="h-5 w-5" />
+    }
   ];
 
   // เมนูสำหรับ Desktop

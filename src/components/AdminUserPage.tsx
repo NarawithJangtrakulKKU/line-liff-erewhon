@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -136,6 +137,10 @@ export default function AdminUsersPage() {
   })
   const [submitting, setSubmitting] = useState(false)
   
+  // Bulk delete states
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  
   // Notification modal states
   const [showNotificationModal, setShowNotificationModal] = useState(false)
   const [notificationTitle, setNotificationTitle] = useState('')
@@ -183,6 +188,67 @@ export default function AdminUsersPage() {
       (user.phone && user.phone.includes(searchTerm))
     ), [users, searchTerm]
   )
+
+  // Bulk selection handlers
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(new Set(filteredUsers.map(user => user.id)))
+    } else {
+      setSelectedUsers(new Set())
+    }
+  }, [filteredUsers])
+
+  const handleSelectUser = useCallback((userId: string, checked: boolean) => {
+    setSelectedUsers(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(userId)
+      } else {
+        newSet.delete(userId)
+      }
+      return newSet
+    })
+  }, [])
+
+  // Bulk delete handler
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedUsers.size === 0) return
+
+    try {
+      setBulkDeleting(true)
+
+      // Delete users
+      await Promise.all(
+        Array.from(selectedUsers).map(userId =>
+          axios.delete(`/api/admin/users/${userId}`)
+        )
+      )
+
+      // Update users list
+      setUsers(prev => prev.filter(user => !selectedUsers.has(user.id)))
+      setSelectedUsers(new Set())
+      
+      showNotification(
+        'success', 
+        'Success', 
+        `Successfully deleted ${selectedUsers.size} user${selectedUsers.size === 1 ? '' : 's'}`
+      )
+    } catch (error) {
+      console.error('Error bulk deleting users:', error)
+      showNotification(
+        'error',
+        'Error',
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || "Failed to delete users"
+          : "An error occurred while deleting users"
+      )
+    } finally {
+      setBulkDeleting(false)
+    }
+  }, [selectedUsers, showNotification])
+
+  // Check if all filtered users are selected
+  const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(user => selectedUsers.has(user.id))
 
   // Handle edit - memoized
   const handleEdit = useCallback((user: User) => {
@@ -332,14 +398,52 @@ export default function AdminUsersPage() {
           {/* Search Bar */}
           <Card className="mb-6">
             <CardContent className="pt-6">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search users by name, LINE ID, email, or phone..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="flex items-center justify-between gap-4">
+                <div className="relative max-w-md flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search users by name, LINE ID, email, or phone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Bulk Delete Button */}
+                {selectedUsers.size > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" disabled={bulkDeleting}>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedUsers.size})`}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Multiple Users</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete {selectedUsers.size} selected user{selectedUsers.size === 1 ? '' : 's'}? This action cannot be undone.
+                          {users
+                            .filter(user => selectedUsers.has(user.id))
+                            .some(user => user._count && (user._count.orders > 0 || user._count.reviews > 0)) && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                              <strong>Warning:</strong> Some selected users have orders or reviews associated with their accounts.
+                            </div>
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleBulkDelete}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete All Selected
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -350,6 +454,11 @@ export default function AdminUsersPage() {
               <CardTitle>Users ({filteredUsers.length})</CardTitle>
               <CardDescription>
                 Manage user accounts and their permissions
+                {selectedUsers.size > 0 && (
+                  <span className="ml-2 text-blue-600 font-medium">
+                    ({selectedUsers.size} selected)
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -365,6 +474,12 @@ export default function AdminUsersPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={isAllSelected}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>User</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Role</TableHead>
@@ -376,7 +491,13 @@ export default function AdminUsersPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
+                        <TableRow key={user.id} className={selectedUsers.has(user.id) ? "bg-blue-50" : ""}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedUsers.has(user.id)}
+                              onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                               {user.pictureUrl ? (

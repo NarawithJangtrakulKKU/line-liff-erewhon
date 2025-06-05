@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Table,
@@ -592,6 +593,10 @@ export default function AdminOrdersPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
+  // Bulk delete states
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+
   // Notification states
   const [showNotificationModal, setShowNotificationModal] = useState(false)
   const [notificationTitle, setNotificationTitle] = useState('')
@@ -642,6 +647,67 @@ export default function AdminOrdersPage() {
       return matchesSearch && matchesStatus
     })
   }, [orders, searchTerm, statusFilter])
+
+  // Bulk selection handlers
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedOrders(new Set(filteredOrders.map(order => order.id)))
+    } else {
+      setSelectedOrders(new Set())
+    }
+  }, [filteredOrders])
+
+  const handleSelectOrder = useCallback((orderId: string, checked: boolean) => {
+    setSelectedOrders(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(orderId)
+      } else {
+        newSet.delete(orderId)
+      }
+      return newSet
+    })
+  }, [])
+
+  // Bulk delete handler
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedOrders.size === 0) return
+
+    try {
+      setBulkDeleting(true)
+
+      // Delete orders
+      await Promise.all(
+        Array.from(selectedOrders).map(orderId =>
+          axios.delete(`/api/admin/orders/${orderId}`)
+        )
+      )
+
+      // Update orders list
+      setOrders(prev => prev.filter(order => !selectedOrders.has(order.id)))
+      setSelectedOrders(new Set())
+      
+      showNotification(
+        'success', 
+        'Success', 
+        `Successfully deleted ${selectedOrders.size} order${selectedOrders.size === 1 ? '' : 's'}`
+      )
+    } catch (error) {
+      console.error('Error bulk deleting orders:', error)
+      showNotification(
+        'error',
+        'Error',
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || "Failed to delete orders"
+          : "An error occurred while deleting orders"
+      )
+    } finally {
+      setBulkDeleting(false)
+    }
+  }, [selectedOrders, showNotification])
+
+  // Check if all filtered orders are selected
+  const isAllSelected = filteredOrders.length > 0 && filteredOrders.every(order => selectedOrders.has(order.id))
 
   // Handle view order
   const handleViewOrder = useCallback((order: Order) => {
@@ -787,19 +853,53 @@ export default function AdminOrdersPage() {
                   />
                 </div>
                 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">All Status</SelectItem>
-                    {ORDER_STATUSES.map((status) => (
-                      <SelectItem key={status.value} value={status.value}>
-                        {status.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  {/* Bulk Delete Button */}
+                  {selectedOrders.size > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={bulkDeleting}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedOrders.size})`}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Multiple Orders</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete {selectedOrders.size} selected order{selectedOrders.size === 1 ? '' : 's'}? This action cannot be undone.
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                              <strong>Warning:</strong> This will permanently delete the orders and all associated data.
+                            </div>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleBulkDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete All Selected
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Status</SelectItem>
+                      {ORDER_STATUSES.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -810,6 +910,11 @@ export default function AdminOrdersPage() {
               <CardTitle>Orders ({filteredOrders.length})</CardTitle>
               <CardDescription>
                 Manage all customer orders and their status
+                {selectedOrders.size > 0 && (
+                  <span className="ml-2 text-blue-600 font-medium">
+                    ({selectedOrders.size} selected)
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -826,6 +931,12 @@ export default function AdminOrdersPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={isAllSelected}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>Order</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Status</TableHead>
@@ -842,7 +953,13 @@ export default function AdminOrdersPage() {
                         const StatusIcon = statusConfig.icon
 
                         return (
-                          <TableRow key={order.id}>
+                          <TableRow key={order.id} className={selectedOrders.has(order.id) ? "bg-blue-50" : ""}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedOrders.has(order.id)}
+                                onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">
                               <div>
                                 <div className="font-medium">{order.orderNumber}</div>

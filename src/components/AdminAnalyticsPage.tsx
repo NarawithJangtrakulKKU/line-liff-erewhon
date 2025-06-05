@@ -23,6 +23,21 @@ import {
   XCircle
 } from 'lucide-react'
 import axios from 'axios'
+import {
+  ComposedChart,
+  Line,
+  Bar,
+  BarChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts'
 
 interface AnalyticsData {
   overview: {
@@ -103,6 +118,9 @@ export default function AdminAnalyticsPage() {
   const [salesPeriod, setSalesPeriod] = useState('month')
   const [activeTab, setActiveTab] = useState('overview')
 
+  // Chart colors
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true)
@@ -171,6 +189,41 @@ export default function AdminAnalyticsPage() {
       case 'CANCELLED': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  // Custom tooltip for sales chart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-4 border rounded-lg shadow-lg">
+          <p className="font-medium">{`ช่วงเวลา: ${label}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.dataKey === 'revenue' 
+                ? `รายได้: ${formatCurrency(entry.value)}`
+                : `จำนวนคำสั่งซื้อ: ${formatNumber(entry.value)}`
+              }
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
+
+  // Custom tooltip for pie chart
+  const PieTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="bg-white p-3 border rounded-lg shadow-lg">
+          <p className="font-medium">{data.method}</p>
+          <p className="text-sm text-gray-600">{formatCurrency(data.total)}</p>
+          <p className="text-sm text-gray-600">{data.count} รายการ</p>
+        </div>
+      )
+    }
+    return null
   }
 
   if (loading) {
@@ -385,19 +438,54 @@ export default function AdminAnalyticsPage() {
 
               {salesData && (
                 <>
-                  {/* Sales Chart Placeholder */}
+                  {/* Sales Chart */}
                   <Card>
                     <CardHeader>
                       <CardTitle>กราฟยอดขาย</CardTitle>
-                      <CardDescription>ยอดขายและจำนวนคำสั่งซื้อตามช่วงเวลา</CardDescription>
+                      <CardDescription>ยอดขายและจำนวนคำสั่งซื้อตามช่วงเวลา ({salesData.totalDataPoints} จุดข้อมูล)</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
-                        <div className="text-center">
-                          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-500">กราฟยอดขาย ({salesData.totalDataPoints} จุดข้อมูล)</p>
-                          <p className="text-sm text-gray-400">รายได้รวม: {formatCurrency(salesData.salesData.reduce((sum, item) => sum + item.revenue, 0))}</p>
-                        </div>
+                      <div style={{ width: '100%', height: 400 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart
+                            data={salesData.salesData}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 5,
+                            }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="label" 
+                              tick={{ fontSize: 12 }}
+                              angle={-45}
+                              textAnchor="end"
+                              height={80}
+                            />
+                            <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Bar
+                              yAxisId="left"
+                              dataKey="orders"
+                              fill="#8884d8"
+                              name="จำนวนคำสั่งซื้อ"
+                              radius={[4, 4, 0, 0]}
+                            />
+                            <Line
+                              yAxisId="right"
+                              type="monotone"
+                              dataKey="revenue"
+                              stroke="#82ca9d"
+                              strokeWidth={3}
+                              name="รายได้ (บาท)"
+                              dot={{ fill: '#82ca9d', strokeWidth: 2, r: 4 }}
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
                       </div>
                     </CardContent>
                   </Card>
@@ -410,13 +498,40 @@ export default function AdminAnalyticsPage() {
                         <CardDescription>การกระจายตัวของวิธีการชำระเงิน</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-4">
-                          {salesData.paymentMethods.map((method) => (
-                            <div key={method.method} className="flex items-center justify-between">
-                              <span className="capitalize">{method.method}</span>
+                        <div style={{ width: '100%', height: 300 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={salesData.paymentMethods}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ method, percent }: any) => `${method} ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="total"
+                              >
+                                {salesData.paymentMethods.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip content={<PieTooltip />} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                          {salesData.paymentMethods.map((method, index) => (
+                            <div key={method.method} className="flex items-center justify-between text-sm">
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                />
+                                <span className="capitalize">{method.method}</span>
+                              </div>
                               <div className="text-right">
                                 <p className="font-medium">{formatCurrency(method.total)}</p>
-                                <p className="text-sm text-gray-500">{method.count} รายการ</p>
+                                <p className="text-xs text-gray-500">{method.count} รายการ</p>
                               </div>
                             </div>
                           ))}
@@ -430,21 +545,35 @@ export default function AdminAnalyticsPage() {
                         <CardDescription>หมวดหมู่สินค้าที่มียอดขายสูงสุด</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-4">
-                          {salesData.topCategories.map((category, index) => (
-                            <div key={category.categoryId} className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                  <span className="text-sm font-medium text-green-600">#{index + 1}</span>
-                                </div>
-                                <span>{category.categoryName}</span>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-medium">{formatCurrency(category.totalRevenue)}</p>
-                                <p className="text-sm text-gray-500">{category.totalSold} ชิ้น</p>
-                              </div>
-                            </div>
-                          ))}
+                        <div style={{ width: '100%', height: 300 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={salesData.topCategories}
+                              layout="horizontal"
+                              margin={{
+                                top: 20,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis type="number" tick={{ fontSize: 12 }} />
+                              <YAxis 
+                                dataKey="categoryName" 
+                                type="category" 
+                                tick={{ fontSize: 10 }}
+                                width={60}
+                              />
+                              <Tooltip
+                                formatter={(value: any, name: string) => [
+                                  name === 'totalRevenue' ? formatCurrency(value) : formatNumber(value),
+                                  name === 'totalRevenue' ? 'รายได้' : 'จำนวนขาย'
+                                ]}
+                              />
+                              <Bar dataKey="totalRevenue" fill="#8884d8" radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
                         </div>
                       </CardContent>
                     </Card>

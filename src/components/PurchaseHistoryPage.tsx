@@ -175,7 +175,7 @@ const safeNumber = (value: unknown): number => {
 const getFileTypeInfo = (file: File) => {
   const isImage = file.type.startsWith('image/')
   const isVideo = file.type.startsWith('video/')
-  const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+  const maxSize = isVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024 // เปลี่ยน video limit เป็น 20MB
   return { isImage, isVideo, maxSize }
 }
 
@@ -207,6 +207,151 @@ export default function PurchaseHistoryPage() {
   // เพิ่ม state สำหรับเก็บสถานะการรีวิว
   const [reviewStatuses, setReviewStatuses] = useState<ReviewStatus[]>([])
   const [loadingReviewStatuses, setLoadingReviewStatuses] = useState(false)
+
+  // ฟังก์ชันสำหรับบีบอัดวิดีโอ
+  const compressVideo = useCallback((file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const video = document.createElement('video')
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) {
+        resolve(file) // fallback to original if compression fails
+        return
+      }
+
+      video.onloadedmetadata = () => {
+        // ลดขนาดวิดีโอถ้าใหญ่เกิน 1280x720
+        const maxWidth = 1280
+        const maxHeight = 720
+        let { videoWidth, videoHeight } = video
+        
+        if (videoWidth > maxWidth || videoHeight > maxHeight) {
+          const ratio = Math.min(maxWidth / videoWidth, maxHeight / videoHeight)
+          videoWidth *= ratio
+          videoHeight *= ratio
+        }
+
+        canvas.width = videoWidth
+        canvas.height = videoHeight
+        
+        // สร้าง MediaRecorder สำหรับการบีบอัด
+        try {
+          const stream = canvas.captureStream(25) // ลด FPS เป็น 25
+          const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm;codecs=vp9',
+            videoBitsPerSecond: 1500000 // ลด bitrate เป็น 1.5 Mbps
+          })
+
+          const chunks: BlobPart[] = []
+          
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              chunks.push(event.data)
+            }
+          }
+
+          mediaRecorder.onstop = () => {
+            const compressedBlob = new Blob(chunks, { type: 'video/webm' })
+            const compressedFile = new File([compressedBlob], 
+              file.name.replace(/\.[^/.]+$/, '.webm'), 
+              { type: 'video/webm' }
+            )
+            resolve(compressedFile.size < file.size ? compressedFile : file)
+          }
+
+          // เริ่มการบันทึก
+          mediaRecorder.start(1000)
+          
+          // วาดเฟรมจากวิดีโอลงใน canvas
+          const drawFrame = () => {
+            if (!video.paused && !video.ended) {
+              ctx.drawImage(video, 0, 0, videoWidth, videoHeight)
+              requestAnimationFrame(drawFrame)
+            }
+          }
+
+          video.onplay = drawFrame
+          video.play()
+          
+          video.onended = () => {
+            mediaRecorder.stop()
+          }
+        } catch (error) {
+          console.error('MediaRecorder error:', error)
+          resolve(file) // fallback
+        }
+      }
+
+      video.onerror = () => resolve(file)
+      video.src = URL.createObjectURL(file)
+      video.load()
+    })
+  }, [])
+
+  // ฟังก์ชันสำหรับสร้าง thumbnail ของวิดีโอ
+  const generateVideoThumbnail = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video')
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) {
+        reject(new Error('Canvas not supported'))
+        return
+      }
+
+      video.onloadeddata = () => {
+        video.currentTime = Math.min(1, video.duration * 0.1)
+      }
+
+      video.onseeked = () => {
+        const maxSize = 150 // ลดขนาด thumbnail ลง
+        let { videoWidth, videoHeight } = video
+        
+        if (videoWidth > maxSize || videoHeight > maxSize) {
+          const ratio = Math.min(maxSize / videoWidth, maxSize / videoHeight)
+          videoWidth *= ratio
+          videoHeight *= ratio
+        }
+
+        canvas.width = videoWidth
+        canvas.height = videoHeight
+        ctx.drawImage(video, 0, 0, videoWidth, videoHeight)
+        
+        const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.6) // ลดคุณภาพลง
+        resolve(thumbnailUrl)
+      }
+
+      video.onerror = () => reject(new Error('Video load error'))
+      video.src = URL.createObjectURL(file)
+      video.load()
+    })
+  }, [])
+
+  // ฟังก์ชันสำหรับ chunked upload
+  const uploadFileInChunks = useCallback(async (file: File, uploadUrl: string, chunkSize = 1024 * 1024): Promise<void> => {
+    const totalChunks = Math.ceil(file.size / chunkSize)
+    
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * chunkSize
+      const end = Math.min(start + chunkSize, file.size)
+      const chunk = file.slice(start, end)
+      
+      const formData = new FormData()
+      formData.append('chunk', chunk)
+      formData.append('chunkIndex', chunkIndex.toString())
+      formData.append('totalChunks', totalChunks.toString())
+      formData.append('fileName', file.name)
+      
+      await axios.post(uploadUrl, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      
+      const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100)
+      setUploadProgress(progress)
+    }
+  }, [])
 
   useEffect(() => {
     if (isInitialized && !isLoggedIn) {
@@ -334,49 +479,124 @@ export default function PurchaseHistoryPage() {
     setShowOrderDetail(false)
   }
 
-  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
 
-    // Validate files
-    for (const file of Array.from(files)) {
-      const { isImage, isVideo, maxSize } = getFileTypeInfo(file)
-      
-      if (!isImage && !isVideo) {
-        alert('กรุณาเลือกไฟล์รูปภาพหรือวิดีโอเท่านั้น')
+    setUploadStatus('กำลังประมวลผลไฟล์...')
+    setUploadProgress(10)
+
+    const processedFiles: File[] = []
+    const processedPreviews: string[] = []
+
+    try {
+      // Validate files
+      for (const file of Array.from(files)) {
+        const { isImage, isVideo, maxSize } = getFileTypeInfo(file)
+        
+        if (!isImage && !isVideo) {
+          alert('กรุณาเลือกไฟล์รูปภาพหรือวิดีโอเท่านั้น')
+          return
+        }
+        
+        // เข้มงวดขึ้นสำหรับวิดีโอ
+        if (isVideo) {
+          // จำกัดความยาววิดีโอไม่เกิน 2 นาที
+          const videoDuration = await new Promise<number>((resolve) => {
+            const video = document.createElement('video')
+            video.onloadedmetadata = () => resolve(video.duration)
+            video.onerror = () => resolve(0)
+            video.src = URL.createObjectURL(file)
+          })
+          
+          if (videoDuration > 120) { // 2 minutes
+            alert(`วิดีโอ "${file.name}" ยาวเกิน 2 นาที\nกรุณาเลือกวิดีโอที่สั้นกว่า`)
+            continue
+          }
+          
+          // จำกัดขนาดวิดีโอเป็น 20MB แทน 50MB
+          if (file.size > 20 * 1024 * 1024) {
+            const proceed = confirm(
+              `วิดีโอ "${file.name}" มีขนาด ${(file.size / (1024 * 1024)).toFixed(2)}MB\n` +
+              'ระบบจะทำการบีบอัดเพื่อลดขนาด คุณต้องการดำเนินการต่อหรือไม่?'
+            )
+            if (!proceed) continue
+          }
+        }
+        
+        if (file.size > maxSize) {
+          const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+          const maxSizeMB = isVideo ? '20MB' : '10MB'
+          alert(`ขนาดไฟล์ ${file.name} (${fileSizeMB}MB) เกินกำหนด\nไฟล์${isVideo ? 'วิดีโอ' : 'รูปภาพ'}ต้องไม่เกิน ${maxSizeMB}`)
+          continue
+        }
+      }
+
+      // Check total files limit
+      if (reviewMedia.length + files.length > 5) {
+        alert('สามารถอัลโหลดได้สูงสุด 5 ไฟล์')
         return
       }
-      
-      // Check file size (max 50MB for videos, 10MB for images)
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      const maxSizeMB = isVideo ? '50MB' : '10MB'
-      
-      if (file.size > maxSize) {
-        alert(`ขนาดไฟล์ ${file.name} (${fileSizeMB}MB) เกินกำหนด\nไฟล์${isVideo ? 'วิดีโอ' : 'รูปภาพ'}ต้องไม่เกิน ${maxSizeMB}`)
-        return
+
+      setUploadProgress(30)
+
+      // Process files
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const { isVideo } = getFileTypeInfo(file)
+        
+        if (isVideo) {
+          setUploadStatus(`กำลังประมวลผลวิดีโอ ${i + 1}/${files.length}...`)
+          
+          try {
+            // บีบอัดวิดีโอถ้าขนาดใหญ่
+            let processedFile = file
+            if (file.size > 10 * 1024 * 1024) { // ถ้าใหญ่กว่า 10MB
+              processedFile = await compressVideo(file)
+            }
+            
+            // สร้าง thumbnail แทนการใช้ video element สำหรับ preview
+            const thumbnail = await generateVideoThumbnail(processedFile)
+            
+            processedFiles.push(processedFile)
+            processedPreviews.push(thumbnail)
+            
+          } catch (error) {
+            console.error('Video processing error:', error)
+            // fallback to original
+            processedFiles.push(file)
+            processedPreviews.push(URL.createObjectURL(file))
+          }
+        } else {
+          // สำหรับรูปภาพ - ใช้วิธีเดิม
+          processedFiles.push(file)
+          processedPreviews.push(URL.createObjectURL(file))
+        }
+        
+        // อัปเดต progress
+        const progress = 30 + ((i + 1) / files.length) * 60
+        setUploadProgress(progress)
       }
+
+      setUploadProgress(100)
+      setUploadStatus('เสร็จสิ้น')
       
-      // Warning for large video files
-      if (isVideo && file.size > 20 * 1024 * 1024) {
-        const proceed = confirm(
-          `ไฟล์วิดีโอ "${file.name}" มีขนาด ${fileSizeMB}MB\n` +
-          'การอัปโหลดอาจใช้เวลานาน คุณต้องการดำเนินการต่อหรือไม่?'
-        )
-        if (!proceed) return
+      // อัปเดต state
+      setReviewMedia(prev => [...prev, ...processedFiles])
+      setMediaPreview(prev => [...prev, ...processedPreviews])
+      
+    } catch (error) {
+      console.error('File processing error:', error)
+      alert('เกิดข้อผิดพลาดในการประมวลผลไฟล์')
+    } finally {
+      setUploadProgress(0)
+      setUploadStatus('')
+      
+      // Clear input
+      if (event.target) {
+        event.target.value = ''
       }
     }
-
-    // Check total files limit (max 5 files)
-    if (reviewMedia.length + files.length > 5) {
-      alert('สามารถอัปโหลดได้สูงสุด 5 ไฟล์')
-      return
-    }
-
-    const newFiles = Array.from(files)
-    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file))
-    
-    setReviewMedia(prev => [...prev, ...newFiles])
-    setMediaPreview(prev => [...prev, ...newPreviewUrls])
   }
 
   const handleCameraCapture = () => {
@@ -417,7 +637,7 @@ export default function PurchaseHistoryPage() {
       setUploadProgress(0)
       setUploadStatus('กำลังเตรียมข้อมูล...')
       
-      // Create FormData for file upload
+      // Create FormData for review submission
       const formData = new FormData()
       formData.append('userId', dbUser.id)
       formData.append('productId', selectedProduct.product.id)
@@ -428,29 +648,51 @@ export default function PurchaseHistoryPage() {
       // Add media files with progress tracking
       if (reviewMedia.length > 0) {
         setUploadStatus(`กำลังเตรียมไฟล์ ${reviewMedia.length} ไฟล์...`)
+        setUploadProgress(20)
+        
         reviewMedia.forEach((file, index) => {
           formData.append(`media-${index}`, file)
         })
-        setUploadProgress(20)
+        
+        setUploadProgress(40)
       }
 
-      setUploadStatus('กำลังอัปโหลด...')
-      setUploadProgress(30)
+      setUploadStatus('กำลังส่งรีวิว...')
+      setUploadProgress(60)
+
+      // ปรับ timeout และ request configuration สำหรับไฟล์ขนาดใหญ่
+      const hasVideoFiles = reviewMedia.some(file => file.type.startsWith('video/'))
+      const timeoutDuration = hasVideoFiles ? 300000 : 60000 // 5 minutes for videos, 1 minute for images only
 
       const response = await axios.post('/api/reviews', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 120000, // 2 minutes timeout
+        timeout: timeoutDuration,
+        maxContentLength: 100 * 1024 * 1024, // 100MB max content
+        maxBodyLength: 100 * 1024 * 1024, // 100MB max body
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const uploadProgress = Math.round((progressEvent.loaded / progressEvent.total) * 100)
+            const totalProgress = 60 + Math.round(uploadProgress * 0.35) // Scale to 60-95%
+            setUploadProgress(Math.min(totalProgress, 95))
+            
+            // Update status based on progress
+            if (uploadProgress < 30) {
+              setUploadStatus('กำลังอัปโหลดไฟล์...')
+            } else if (uploadProgress < 70) {
+              setUploadStatus('กำลังประมวลผล...')
+            } else {
+              setUploadStatus('เกือบเสร็จแล้ว...')
+            }
+          }
+        }
       })
-
-      setUploadProgress(80)
-      setUploadStatus('กำลังประมวลผล...')
-
-      console.log('API response:', { status: response.status, data: response.data })
 
       setUploadProgress(100)
       setUploadStatus('เสร็จสิ้น!')
+
+      console.log('API response:', { status: response.status, data: response.data })
 
       setShowReviewModal(false)
       setSelectedProduct(null)
@@ -475,16 +717,19 @@ export default function PurchaseHistoryPage() {
         if (error.code === 'ECONNABORTED') {
           alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง หรือลดขนาดไฟล์')
         } else if (error.response) {
-          // Handle specific error status codes
           const status = error.response.status
           const message = error.response.data?.message
           
           if (status === 403) {
             alert(message || 'คุณสามารถรีวิวได้เฉพาะสินค้าที่ได้รับแล้วเท่านั้น')
           } else if (status === 413) {
-            alert('ไฟล์มีขนาดใหญ่เกินไป กรุณาลดขนาดไฟล์หรือเลือกไฟล์อื่น')
+            alert(message || 'ไฟล์มีขนาดใหญ่เกินไป กรุณาลดขนาดไฟล์หรือเลือกไฟล์อื่น')
           } else if (status === 408 || status === 504) {
-            alert('การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง')
+            alert(message || 'การอัปโหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง')
+          } else if (status === 499) {
+            alert(message || 'การเชื่อมต่อถูกยกเลิก กรุณาลองใหม่อีกครั้ง')
+          } else if (status === 507) {
+            alert(message || 'พื้นที่เก็บข้อมูลเซิร์ฟเวอร์เต็ม กรุณาติดต่อผู้ดูแลระบบ')
           } else {
             alert(message || 'เกิดข้อผิดพลาดในการส่งรีวิว')
           }
@@ -1234,16 +1479,14 @@ export default function PurchaseHistoryPage() {
                           <div>
                             <h4 className="font-medium text-gray-900">อัปโหลดรูปภาพหรือวิดีโอ</h4>
                             <p className="text-sm text-gray-500 mt-1">
-                              รองรับ: JPG, PNG, GIF, MP4, MOV (รูปภาพ ≤10MB, วิดีโอ ≤50MB)
+                              รองรับ: JPG, PNG, GIF, MP4, MOV (รูปภาพ ≤10MB, วิดีโอ ≤20MB)
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
                               สูงสุด 5 ไฟล์ (เหลือ {5 - mediaPreview.length} ไฟล์)
                             </p>
-                            {reviewMedia.some(file => getFileTypeInfo(file).isVideo) && (
-                              <p className="text-xs text-amber-600 mt-1 font-medium">
-                                ⚠️ วิดีโอขนาดใหญ่อาจใช้เวลาอัปโหลดนาน
-                              </p>
-                            )}
+                            <p className="text-xs text-amber-600 mt-1 font-medium">
+                              ⚡ วิดีโอจะถูกประมวลผลเพื่อเพิ่มความเร็ว | ควรไม่เกิน 2 นาที
+                            </p>
                           </div>
 
                           <div className="flex flex-col sm:flex-row gap-2 justify-center">
@@ -1253,6 +1496,7 @@ export default function PurchaseHistoryPage() {
                               size="sm"
                               onClick={() => fileInputRef.current?.click()}
                               className="flex items-center gap-2"
+                              disabled={uploadProgress > 0}
                             >
                               <FileImage className="h-4 w-4" />
                               เลือกไฟล์
@@ -1264,6 +1508,7 @@ export default function PurchaseHistoryPage() {
                               size="sm"
                               onClick={handleCameraCapture}
                               className="flex items-center gap-2"
+                              disabled={uploadProgress > 0}
                             >
                               <Camera className="h-4 w-4" />
                               ถ่ายรูป/วิดีโอ
@@ -1279,6 +1524,22 @@ export default function PurchaseHistoryPage() {
                             className="hidden"
                           />
                         </div>
+                        
+                        {/* Processing Progress */}
+                        {uploadProgress > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-blue-600">{uploadStatus}</span>
+                              <span className="text-blue-600">{uploadProgress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+                                style={{ width: `${uploadProgress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1318,29 +1579,6 @@ export default function PurchaseHistoryPage() {
                       )}
                     </Button>
                   </div>
-
-                  {/* Upload Progress */}
-                  {submittingReview && (
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">{uploadStatus}</span>
-                        <span className="text-gray-600">{uploadProgress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-orange-500 h-2 rounded-full transition-all duration-300 ease-out"
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                      </div>
-                      {uploadProgress < 100 && (
-                        <p className="text-xs text-gray-500 text-center">
-                          {reviewMedia.some(file => file.type.startsWith('video/')) 
-                            ? 'การอัปโหลดวิดีโออาจใช้เวลาสักครู่ กรุณารอสักครู่...' 
-                            : 'กำลังประมวลผล...'}
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
             </DialogContent>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight,ShoppingBag } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ShoppingBag, Star, Heart } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
 
@@ -105,7 +105,7 @@ export default function HomePage() {
             title: 'SINCERELY SMOOTHIE',
             subtitle: 'BY KALI UCHIS',
             image: '/images/carousel/pexels-ash-craig-122861-376464.jpg',
-            color: 'bg-pink-100',
+            color: 'bg-gradient-to-br from-pink-100 via-purple-50 to-indigo-100',
             textColor: 'text-gray-800'
         },
         {
@@ -113,7 +113,7 @@ export default function HomePage() {
             title: 'DAILY SPECIALS',
             subtitle: 'MONDAY',
             image: '/images/carousel/pexels-ella-olsson-572949-1640777.jpg',
-            color: 'bg-orange-100',
+            color: 'bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100',
             textColor: 'text-gray-800'
         },
         {
@@ -121,7 +121,7 @@ export default function HomePage() {
             title: 'EAT IN SEASON',
             subtitle: '',
             image: '/images/carousel/pexels-janetrangdoan-1099680.jpg',
-            color: 'bg-green-100',
+            color: 'bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100',
             textColor: 'text-gray-800'
         },
         {
@@ -129,7 +129,7 @@ export default function HomePage() {
             title: 'DAILY SPECIALS',
             subtitle: 'EXPLORE ESSENTIALS',
             image: '/images/carousel/pexels-robinstickel-70497.jpg',
-            color: 'bg-yellow-100',
+            color: 'bg-gradient-to-br from-yellow-100 via-orange-50 to-red-100',
             textColor: 'text-gray-800'
         }
     ]
@@ -263,36 +263,52 @@ export default function HomePage() {
     // Product Card Component
     const ProductCard = ({ item }: { item: HotBarItem }) => (
         <div className={`w-full ${itemsPerView === 2 ? 'sm:w-1/2' : itemsPerView === 3 ? 'sm:w-1/2 lg:w-1/3' : ''} flex-none px-2 sm:px-3`}>
-            <div className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+            <div className="bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group cursor-pointer transform hover:-translate-y-2 backdrop-blur-sm border border-gray-100">
                 <Link href={`/products/${item.id}`}>
-                <div className="relative">
+                <div className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <Image
                         src={item.image}
                         alt={item.name}
                         width={100}
                         height={100}
-                        className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform"
+                        className="w-full h-44 sm:h-52 object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     {item.badge && (
-                        <span className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-gray-800 text-white text-xs px-2 py-1 rounded-full font-medium">
+                        <span className={`absolute top-3 sm:top-4 left-3 sm:left-4 px-3 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-lg ${
+                            item.badge === 'FEATURED' 
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' 
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
+                        }`}>
                             {item.badge}
                         </span>
                     )}
+                    <button className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition-all duration-300 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0">
+                        <Heart className="w-4 h-4 text-gray-700 hover:text-red-500 transition-colors" />
+                    </button>
                 </div>
-                <div className="p-3 sm:p-4">
-                    <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base line-clamp-1">{item.name}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{item.description}</p>
+                <div className="p-4 sm:p-5">
+                    <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base line-clamp-1 flex-1">{item.name}</h3>
+                        <div className="flex items-center ml-2">
+                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                            <span className="text-xs text-gray-600 ml-1">4.8</span>
+                        </div>
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">{item.description}</p>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                            <span className="font-bold text-base sm:text-lg">฿{item.price.toLocaleString()}</span>
+                            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                                ฿{item.price.toLocaleString()}
+                            </span>
                             {item.comparePrice && (
                                 <span className="text-xs sm:text-sm text-gray-500 line-through">
                                     ฿{item.comparePrice.toLocaleString()}
                                 </span>
                             )}
                         </div>
-                        <button className="bg-orange-500 text-white p-1.5 sm:p-2 rounded-full hover:bg-orange-600 transition-colors">
-                            <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <button className="bg-gradient-to-r from-orange-500 to-pink-500 text-white p-2.5 sm:p-3 rounded-2xl hover:from-orange-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                     </div>
                 </div>
@@ -305,14 +321,14 @@ export default function HomePage() {
     const LoadingSkeleton = () => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[...Array(itemsPerView)].map((_, index) => (
-                <div key={index} className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                    <div className="w-full h-40 sm:h-48 bg-gray-200" />
-                    <div className="p-4 space-y-3">
-                        <div className="h-4 bg-gray-200 rounded w-3/4" />
-                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                <div key={index} className="bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg animate-pulse">
+                    <div className="w-full h-44 sm:h-52 bg-gradient-to-br from-gray-200 to-gray-300" />
+                    <div className="p-4 sm:p-5 space-y-3">
+                        <div className="h-5 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-3/4" />
+                        <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-md w-1/2" />
                         <div className="flex justify-between items-center">
-                            <div className="h-6 bg-gray-200 rounded w-1/4" />
-                            <div className="h-8 w-8 bg-gray-200 rounded-full" />
+                            <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-1/4" />
+                            <div className="h-10 w-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-2xl" />
                         </div>
                     </div>
                 </div>
@@ -321,44 +337,47 @@ export default function HomePage() {
     )
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
 
       {/* Popular Categories Section */}
-      <section className="py-6 sm:py-8 md:py-12 px-4">
+      <section className="py-8 sm:py-12 md:py-16 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">หมวดหมู่ยอดนิยม</h2>
-              <Link href="/allcategories" className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                <button className="cursor-pointer text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                  ดูทั้งหมด <ChevronRight className="w-4 h-4 ml-1" />
-                </button>
-              </Link>
+          <div className="flex justify-between items-center mb-8 sm:mb-10">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">หมวดหมู่ยอดนิยม</h2>
+              <p className="text-gray-600 text-sm sm:text-base">เลือกซื้อสินค้าตามหมวดหมู่ที่คุณชื่นชอบ</p>
+            </div>
+            <Link href="/allcategories" className="group">
+              <button className="text-sm sm:text-base text-gray-600 hover:text-orange-600 flex items-center font-medium transition-all duration-300 bg-white px-4 py-2 rounded-full shadow-md hover:shadow-lg">
+                ดูทั้งหมด <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </Link>
           </div>
           
           <div className="relative">
-            <div className="flex overflow-x-auto space-x-4 sm:space-x-6 pb-4 scrollbar-hide">
+            <div className="flex overflow-x-auto space-x-6 sm:space-x-8 pb-4 scrollbar-hide">
               {isCategoriesLoading ? (
                 // Loading skeleton for categories
                 [...Array(8)].map((_, index) => (
-                  <div key={index} className="flex-none w-24 sm:w-28 md:w-32 text-center">
-                    <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 mx-auto mb-2 sm:mb-3 rounded-2xl bg-gray-200 animate-pulse" />
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-16 sm:w-20 mx-auto animate-pulse" />
+                  <div key={index} className="flex-none w-28 sm:w-32 md:w-36 text-center">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mx-auto mb-3 sm:mb-4 rounded-3xl bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse shadow-lg" />
+                    <div className="h-4 sm:h-5 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-20 sm:w-24 mx-auto animate-pulse" />
                   </div>
                 ))
               ) : (
                 categories.map((category) => (
-                  <div key={category.id} className="flex-none w-24 sm:w-28 md:w-32 text-center group cursor-pointer">
+                  <div key={category.id} className="flex-none w-28 sm:w-32 md:w-36 text-center group cursor-pointer">
                     <Link href={`/allcategories/${category.id}`}>
-                    <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 mx-auto mb-2 sm:mb-3 rounded-2xl overflow-hidden bg-gray-100 group-hover:scale-105 transition-transform">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mx-auto mb-3 sm:mb-4 rounded-3xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 group-hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-2xl border-2 border-white">
                       <Image
                         src={category.imageUrl || '/api/placeholder/120/120'}
                         alt={category.name}
-                        width={80}
-                        height={80}
+                        width={120}
+                        height={120}
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <p className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-orange-600 transition-colors line-clamp-2">
+                    <p className="text-sm sm:text-base font-semibold text-gray-700 group-hover:text-orange-600 transition-colors line-clamp-2 leading-relaxed">
                       {category.name}
                     </p>
                     </Link>
@@ -371,39 +390,40 @@ export default function HomePage() {
       </section>
 
       {/* Featured Sections Carousel */}
-      <section className="py-6 sm:py-8 px-4">
+      <section className="py-8 sm:py-12 px-4">
           <div className="max-w-7xl mx-auto">
-              <div className="relative overflow-hidden rounded-xl sm:rounded-2xl">
+              <div className="relative overflow-hidden rounded-3xl sm:rounded-4xl shadow-2xl">
                   <div
-                      className="flex transition-transform duration-500 ease-in-out"
+                      className="flex transition-transform duration-700 ease-in-out"
                       style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                   >
                       {featuredSections.map((section) => (
                           <div key={section.id} className="w-full flex-none">
-                              <div className={`${section.color} relative overflow-hidden rounded-xl sm:rounded-2xl`}>
-                                  <div className="flex flex-col md:flex-row items-center">
-                                      <div className="flex-1 p-6 sm:p-8 md:p-12 w-full md:w-1/2">
-                                          <div className="space-y-2">
+                              <div className={`${section.color} relative overflow-hidden rounded-3xl sm:rounded-4xl`}>
+                                  <div className="flex flex-col md:flex-row items-center min-h-[350px] md:min-h-[400px]">
+                                      <div className="flex-1 p-8 sm:p-12 md:p-16 w-full md:w-1/2">
+                                          <div className="space-y-4">
                                               {section.subtitle && (
-                                                  <p className={`text-sm sm:text-base font-medium ${section.textColor} opacity-80`}>
+                                                  <p className={`text-base sm:text-lg font-semibold ${section.textColor} opacity-80 tracking-wide`}>
                                                       {section.subtitle}
                                                   </p>
                                               )}
-                                              <h3 className={`text-2xl sm:text-3xl md:text-4xl font-bold ${section.textColor} leading-tight`}>
+                                              <h3 className={`text-3xl sm:text-4xl md:text-5xl font-black ${section.textColor} leading-tight tracking-tight`}>
                                                   {section.title}
                                               </h3>
                                           </div>
-                                          <button className="mt-4 sm:mt-6 bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full hover:bg-gray-800 transition-colors text-sm sm:text-base">
-                                                      →
-                                                  </button>
+                                          <button className="mt-6 sm:mt-8 bg-gradient-to-r from-gray-900 to-gray-700 text-white px-8 sm:px-10 py-3 sm:py-4 rounded-2xl hover:from-gray-800 hover:to-gray-600 transition-all duration-300 text-base sm:text-lg font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105">
+                                              เลือกซื้อ →
+                                          </button>
                                       </div>
-                                      <div className="w-full md:w-1/2">
+                                      <div className="w-full md:w-1/2 relative">
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10" />
                                           <Image
                                               src={section.image}
                                               alt={section.title}
-                                              width={500}
-                                              height={300}
-                                              className="w-full h-48 sm:h-64 md:h-80 object-cover"
+                                              width={600}
+                                              height={400}
+                                              className="w-full h-56 sm:h-72 md:h-96 object-cover"
                                           />
                                       </div>
                                   </div>
@@ -415,25 +435,28 @@ export default function HomePage() {
                   {/* Navigation Buttons */}
                   <button
                       onClick={prevSlide}
-                      className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 sm:p-2 shadow-lg transition-all"
+                      className="absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-2xl p-3 sm:p-4 shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm border border-white/20"
                   >
-                      <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
                   </button>
                   <button
                       onClick={nextSlide}
-                      className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1.5 sm:p-2 shadow-lg transition-all"
+                      className="absolute right-4 sm:right-6 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-2xl p-3 sm:p-4 shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm border border-white/20"
                   >
-                      <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
+                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
                   </button>
 
                   {/* Dots Indicator */}
-                  <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-1.5 sm:space-x-2">
+                  <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 sm:space-x-3">
                       {featuredSections.map((_, index) => (
                           <button
                               key={index}
                               onClick={() => setCurrentSlide(index)}
-                              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${index === currentSlide ? 'bg-gray-800' : 'bg-gray-400'
-                                  }`}
+                              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                                  index === currentSlide 
+                                      ? 'bg-white shadow-lg scale-125' 
+                                      : 'bg-white/60 hover:bg-white/80'
+                              }`}
                           />
                       ))}
                   </div>
@@ -442,29 +465,32 @@ export default function HomePage() {
       </section>
         
       {/* Featured Products Section */}
-      <section className="py-6 sm:py-8 md:py-12 px-4 bg-gray-50">
+      <section className="py-8 sm:py-12 md:py-16 px-4 bg-gradient-to-b from-gray-50/50 to-white">
           <div className="max-w-7xl mx-auto">
-              <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">สินค้าแนะนำ</h2>
-                  <div className="flex items-center space-x-2">
-                      <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                          <Link href="/allfeatures">
-                              ดูทั้งหมด
-                          </Link>
-                      </button>
+              <div className="flex justify-between items-center mb-8 sm:mb-10">
+                  <div>
+                      <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">สินค้าแนะนำ</h2>
+                      <p className="text-gray-600 text-sm sm:text-base">สินค้าคุณภาพที่เราแนะนำเป็นพิเศษ</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                      <Link href="/allfeatures" className="group">
+                          <button className="text-sm sm:text-base text-gray-600 hover:text-purple-600 flex items-center font-medium transition-all duration-300 bg-white px-4 py-2 rounded-full shadow-md hover:shadow-lg">
+                              ดูทั้งหมด <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                          </button>
+                      </Link>
                       <button
                           onClick={prevHotBarSlide}
-                          className="p-1.5 sm:p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2.5 sm:p-3 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 border border-gray-100"
                           disabled={hotBarSlide === 0 || isLoading || hotBarItems.length <= itemsPerView}
                       >
-                          <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                       </button>
                       <button
                           onClick={nextHotBarSlide}
-                          className="p-1.5 sm:p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2.5 sm:p-3 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 border border-gray-100"
                           disabled={hotBarSlide >= Math.max(0, hotBarItems.length - itemsPerView) || isLoading || hotBarItems.length <= itemsPerView}
                       >
-                          <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                       </button>
                   </div>
               </div>
@@ -474,7 +500,7 @@ export default function HomePage() {
               ) : (
                   <div className="overflow-hidden">
                       <div
-                          className="flex transition-transform duration-300 ease-in-out"
+                          className="flex transition-transform duration-500 ease-in-out"
                           style={{ transform: `translateX(-${hotBarSlide * (100 / itemsPerView)}%)` }}
                       >
                           {hotBarItems.map((item) => (
@@ -487,29 +513,32 @@ export default function HomePage() {
       </section>
 
       {/* News Products Section */}
-      <section className="py-6 sm:py-8 md:py-12 px-4 bg-gray-50">
+      <section className="py-8 sm:py-12 md:py-16 px-4 bg-gradient-to-b from-white to-gray-50/50">
           <div className="max-w-7xl mx-auto">
-              <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">สินค้าใหม่ล่าสุด</h2>
-                  <div className="flex items-center space-x-2">
-                      <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                          <Link href="/allfeatures">
-                             ดูทั้งหมด
-                          </Link>
-                      </button>
+              <div className="flex justify-between items-center mb-8 sm:mb-10">
+                  <div>
+                      <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">สินค้าใหม่ล่าสุด</h2>
+                      <p className="text-gray-600 text-sm sm:text-base">สินค้าใหม่ที่เพิ่งเข้ามาใหม่</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                      <Link href="/allfeatures" className="group">
+                          <button className="text-sm sm:text-base text-gray-600 hover:text-emerald-600 flex items-center font-medium transition-all duration-300 bg-white px-4 py-2 rounded-full shadow-md hover:shadow-lg">
+                             ดูทั้งหมด <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                          </button>
+                      </Link>
                       <button
                           onClick={prevNewestSlide}
-                          className="p-1.5 sm:p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2.5 sm:p-3 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 border border-gray-100"
                           disabled={newestProductsSlide === 0 || isNewestLoading || newestProducts.length <= itemsPerView}
                       >
-                          <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                       </button>
                       <button
                           onClick={nextNewestSlide}
-                          className="p-1.5 sm:p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2.5 sm:p-3 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 border border-gray-100"
                           disabled={newestProductsSlide >= Math.max(0, newestProducts.length - itemsPerView) || isNewestLoading || newestProducts.length <= itemsPerView}
                       >
-                          <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                       </button>
                   </div>
               </div>
@@ -519,7 +548,7 @@ export default function HomePage() {
               ) : (
                   <div className="overflow-hidden">
                       <div
-                          className="flex transition-transform duration-300 ease-in-out"
+                          className="flex transition-transform duration-500 ease-in-out"
                           style={{ transform: `translateX(-${newestProductsSlide * (100 / itemsPerView)}%)` }}
                       >
                           {newestProducts.map((item) => (
@@ -532,29 +561,32 @@ export default function HomePage() {
       </section>
 
       {/* All Products Section */}
-      <section className="py-6 sm:py-8 md:py-12 px-4 bg-gray-50">
+      <section className="py-8 sm:py-12 md:py-16 px-4 bg-gradient-to-b from-gray-50/50 to-white">
           <div className="max-w-7xl mx-auto">
-              <div className="flex justify-between items-center mb-6 sm:mb-8">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">สินค้าของเรา</h2>
-                  <div className="flex items-center space-x-2">
-                      <button className="text-sm sm:text-base text-gray-600 hover:text-gray-800 flex items-center">
-                          <Link href="/products">
-                              ดูทั้งหมด
-                          </Link>
-                      </button>
+              <div className="flex justify-between items-center mb-8 sm:mb-10">
+                  <div>
+                      <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">สินค้าของเรา</h2>
+                      <p className="text-gray-600 text-sm sm:text-base">สินค้าทั้งหมดในร้านของเรา</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                      <Link href="/products" className="group">
+                          <button className="text-sm sm:text-base text-gray-600 hover:text-orange-600 flex items-center font-medium transition-all duration-300 bg-white px-4 py-2 rounded-full shadow-md hover:shadow-lg">
+                              ดูทั้งหมด <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                          </button>
+                      </Link>
                       <button
                           onClick={prevAllProductsSlide}
-                          className="p-1.5 sm:p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2.5 sm:p-3 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 border border-gray-100"
                           disabled={allProductsSlide === 0 || isAllProductsLoading || allProducts.length <= itemsPerView}
                       >
-                          <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                       </button>
                       <button
                           onClick={nextAllProductsSlide}
-                          className="p-1.5 sm:p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2.5 sm:p-3 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 border border-gray-100"
                           disabled={allProductsSlide >= Math.max(0, allProducts.length - itemsPerView) || isAllProductsLoading || allProducts.length <= itemsPerView}
                       >
-                          <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
                       </button>
                   </div>
               </div>
@@ -564,7 +596,7 @@ export default function HomePage() {
               ) : (
                   <div className="overflow-hidden">
                       <div
-                          className="flex transition-transform duration-300 ease-in-out"
+                          className="flex transition-transform duration-500 ease-in-out"
                           style={{ transform: `translateX(-${allProductsSlide * (100 / itemsPerView)}%)` }}
                       >
                           {allProducts.map((item) => (
