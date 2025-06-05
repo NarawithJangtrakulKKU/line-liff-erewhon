@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import AdminSidebar from '@/components/AdminSidebar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -266,44 +265,48 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Main Content */}
       <div className="md:pl-64">
-        {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between p-4 bg-white border-b">
-          <AdminSidebar isMobile={true} />
-          <h1 className="text-xl font-semibold">Dashboard</h1>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-
-        {/* Desktop Header */}
-        <div className="hidden md:block bg-white border-b px-6 py-4">
+        {/* Header */}
+        <div className="bg-white border-b p-4 md:px-6 md:py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">ภาพรวมของร้านค้าออนไลน์</p>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-gray-600 text-sm md:text-base">ภาพรวมของร้านค้าออนไลน์</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleRefresh}
                 disabled={refreshing}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Refreshing...' : 'Refresh'}
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''} md:mr-2`} />
+                <span className="hidden md:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => window.open('/', '_blank')}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.open('/', '_blank')}
+                className="hidden md:flex"
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 View Store
               </Button>
-              <Button size="sm" onClick={handleAddProduct}>
+              <Button 
+                size="sm" 
+                onClick={handleAddProduct}
+                className="hidden md:flex"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
+              </Button>
+              
+              {/* Mobile action button */}
+              <Button 
+                size="sm" 
+                onClick={handleAddProduct}
+                className="md:hidden"
+              >
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -311,7 +314,7 @@ export default function AdminDashboard() {
 
         {/* Error Message */}
         {error && (
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <Card className="border-red-200 bg-red-50">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-red-800">
@@ -332,7 +335,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Dashboard Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[

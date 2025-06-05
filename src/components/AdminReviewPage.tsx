@@ -280,39 +280,27 @@ export default function AdminReviewPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="md:pl-64">
-        {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between p-4 bg-white border-b">
-          <h1 className="text-xl font-semibold">Review Dashboard</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchReviewData(true)}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-
-        {/* Desktop Header */}
-        <div className="hidden md:block bg-white border-b p-6">
+        {/* Header */}
+        <div className="bg-white border-b p-4 md:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Review Dashboard</h1>
-              <p className="text-gray-600 mt-2">สรุปความคิดเห็นและการประเมินสินค้าโดยรวม</p>
+              <h1 className="text-xl md:text-3xl font-bold text-gray-900">Review Dashboard</h1>
+              <p className="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">สรุปความคิดเห็นและการประเมินสินค้าโดยรวม</p>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => fetchReviewData(true)}
                 disabled={refreshing}
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''} md:mr-2`} />
+                <span className="hidden md:inline">Refresh</span>
               </Button>
               
               <Select value={timeFilter} onValueChange={setTimeFilter}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-20 md:w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -328,7 +316,7 @@ export default function AdminReviewPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="p-4 mx-6 mt-6 bg-red-50 border border-red-200 rounded-lg">
+          <div className="p-4 mx-4 md:mx-6 mt-4 md:mt-6 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
               <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
               <p className="text-red-700">{error}</p>
