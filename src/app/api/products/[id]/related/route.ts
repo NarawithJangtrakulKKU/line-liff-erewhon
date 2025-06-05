@@ -1,4 +1,3 @@
-// app/api/products/[id]/related/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
@@ -110,33 +109,4 @@ export async function GET(
   } finally {
     await prisma.$disconnect();
   }
-}
-
-// หากมี API route อื่นที่ใช้ params ก็ต้องแก้ไขด้วย
-// ตัวอย่าง: app/api/admin/categories/[id]/route.ts
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params; // เพิ่ม await
-    const body = await request.json();
-    
-    // ... rest of the code
-  } catch (error) {
-    // error handling
-  }
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params; // เพิ่ม await
-    
-    // ... rest of the code
-  } catch (error) {
-    // error handling
-  }
-}
+} 

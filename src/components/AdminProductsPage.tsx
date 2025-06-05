@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Plus, Edit, Trash2, Search, Eye, EyeOff, Upload, X, Package, Tag } from 'lucide-react'
 import axios from 'axios'
 import {
@@ -104,10 +105,8 @@ const ProductForm = React.memo(({
   submitting,
   uploadingImage,
   imagePreview,
-  setImagePreview,
   onImageUpload,
   onRemoveImage,
-  showNotification
 }: { 
   formData: ProductFormData;
   setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>;
@@ -303,9 +302,11 @@ const ProductForm = React.memo(({
           <div className="grid grid-cols-3 gap-2">
             {imagePreview.map((image, index) => (
               <div key={index} className="relative">
-                <img
+                <Image
                   src={image}
                   alt={`Product image ${index + 1}`}
+                  width={96}
+                  height={96}
                   className="w-full h-24 object-cover rounded-lg border"
                 />
                 <Button
@@ -415,7 +416,6 @@ export default function AdminProductsPage() {
     images: []
   })
   const [submitting, setSubmitting] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreview, setImagePreview] = useState<string[]>([])
   
@@ -640,7 +640,7 @@ export default function AdminProductsPage() {
     if (!files || files.length === 0) return
 
     // Validate files
-    for (let file of Array.from(files)) {
+    for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) {
         showNotification('error', 'Error', 'Please select valid image files only')
         return
@@ -839,7 +839,7 @@ export default function AdminProductsPage() {
                       submitLabel="Create Product" 
                       mode="create"
                       submitting={submitting}
-                      uploadingImage={uploadingImage}
+                      uploadingImage={false}
                       imagePreview={imagePreview}
                       setImagePreview={setImagePreview}
                       onImageUpload={handleImageUpload}
@@ -899,9 +899,11 @@ export default function AdminProductsPage() {
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                               {product.images.length > 0 ? (
-                                <img
+                                <Image
                                   src={product.images[0].imageUrl}
                                   alt={product.name}
+                                  width={48}
+                                  height={48}
                                   className="w-12 h-12 rounded-lg object-cover"
                                 />
                               ) : (
@@ -985,7 +987,7 @@ export default function AdminProductsPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete Product</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                                      Are you sure you want to delete &quot;{product.name}&quot;? This action cannot be undone.
                                     </AlertDialogDescription>
                                     {product.images.length > 0 && (
                                       <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
@@ -1032,7 +1034,7 @@ export default function AdminProductsPage() {
                 submitLabel="Update Product" 
                 mode="edit"
                 submitting={submitting}
-                uploadingImage={uploadingImage}
+                uploadingImage={false}
                 imagePreview={imagePreview}
                 setImagePreview={setImagePreview}
                 onImageUpload={handleImageUpload}

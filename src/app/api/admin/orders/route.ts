@@ -1,8 +1,17 @@
 // app/api/admin/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, OrderStatus } from '@prisma/client'
 
 const prisma = new PrismaClient()
+
+interface OrderWhereCondition {
+  status?: OrderStatus
+  OR?: Array<{
+    orderNumber?: { contains: string; mode: 'insensitive' }
+    user?: { displayName?: { contains: string; mode: 'insensitive' } }
+    address?: { name?: { contains: string; mode: 'insensitive' } }
+  }>
+}
 
 // GET /api/admin/orders - ดึงข้อมูลออเดอร์ทั้งหมด
 export async function GET(request: NextRequest) {
@@ -16,10 +25,10 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // สร้าง where condition
-    const whereCondition: any = {}
+    const whereCondition: OrderWhereCondition = {}
     
     if (status && status !== 'ALL') {
-      whereCondition.status = status
+      whereCondition.status = status as OrderStatus
     }
     
     if (search) {

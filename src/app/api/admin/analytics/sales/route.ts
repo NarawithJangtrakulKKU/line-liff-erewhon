@@ -3,14 +3,20 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+interface SalesDataPoint {
+  period: string
+  orders: number
+  revenue: number
+  label: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || 'month' // day, week, month, year
     const limit = parseInt(searchParams.get('limit') || '12')
 
-    let salesData: any[] = []
-    const now = new Date()
+    let salesData: SalesDataPoint[] = []
 
     switch (period) {
       case 'day':
@@ -127,7 +133,7 @@ export async function GET(request: NextRequest) {
 }
 
 async function getDailySales(days: number) {
-  const salesData = []
+  const salesData: SalesDataPoint[] = []
   const now = new Date()
   
   for (let i = days - 1; i >= 0; i--) {
@@ -166,7 +172,7 @@ async function getDailySales(days: number) {
 }
 
 async function getWeeklySales(weeks: number) {
-  const salesData = []
+  const salesData: SalesDataPoint[] = []
   const now = new Date()
   
   for (let i = weeks - 1; i >= 0; i--) {
@@ -205,7 +211,7 @@ async function getWeeklySales(weeks: number) {
 }
 
 async function getMonthlySales(months: number) {
-  const salesData = []
+  const salesData: SalesDataPoint[] = []
   const now = new Date()
   
   for (let i = months - 1; i >= 0; i--) {
@@ -243,7 +249,7 @@ async function getMonthlySales(months: number) {
 }
 
 async function getYearlySales(years: number) {
-  const salesData = []
+  const salesData: SalesDataPoint[] = []
   const now = new Date()
   
   for (let i = years - 1; i >= 0; i--) {

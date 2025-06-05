@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
 import axios from 'axios'
 import { 
-  User, 
+  User,
   Mail, 
   Phone, 
   MapPin, 
@@ -13,7 +14,6 @@ import {
   Edit, 
   Trash2, 
   Save,
-  ArrowLeft,
   Check,
   X
 } from 'lucide-react'
@@ -222,7 +222,6 @@ export default function UserSettingPage() {
   const router = useRouter()
   
   // States
-  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loadingAddresses, setLoadingAddresses] = useState(true)
@@ -338,7 +337,7 @@ export default function UserSettingPage() {
 
     try {
       setSaving(true)
-      const { data } = await axios.put(`/api/user/${dbUser.id}`, userFormData)
+      await axios.put(`/api/user/${dbUser.id}`, userFormData)
       await refreshUserData()
       setHasUserChanges(false)
       showNotification('success', 'บันทึกสำเร็จ', 'ข้อมูลส่วนตัวได้รับการอัปเดตแล้ว')
@@ -356,7 +355,7 @@ export default function UserSettingPage() {
 
     try {
       setSaving(true)
-      const { data } = await axios.post('/api/user/addresses', {
+      await axios.post('/api/user/addresses', {
         ...addressFormData,
         userId: dbUser.id
       })
@@ -394,7 +393,7 @@ export default function UserSettingPage() {
 
     try {
       setSaving(true)
-      const { data } = await axios.put(`/api/user/addresses/${selectedAddress.id}`, addressFormData)
+      await axios.put(`/api/user/addresses/${selectedAddress.id}`, addressFormData)
       await fetchAddresses()
       setIsEditAddressModalOpen(false)
       resetAddressForm()
@@ -410,7 +409,7 @@ export default function UserSettingPage() {
   // Handle delete address
   const handleDeleteAddress = useCallback(async (addressId: string) => {
     try {
-      const { data } = await axios.delete(`/api/user/addresses/${addressId}`)
+      await axios.delete(`/api/user/addresses/${addressId}`)
       await fetchAddresses()
       showNotification('success', 'ลบที่อยู่สำเร็จ', 'ที่อยู่ได้รับการลบแล้ว')
     } catch (error) {
@@ -465,9 +464,11 @@ export default function UserSettingPage() {
           <CardContent className="space-y-4">
             {/* Profile Display (Read Only) */}
             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <img
+              <Image
                 src={profile.pictureUrl || '/api/placeholder/64/64'}
                 alt="Profile"
+                width={64}
+                height={64}
                 className="w-16 h-16 rounded-full"
               />
               <div>
@@ -620,7 +621,7 @@ export default function UserSettingPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>ลบที่อยู่</AlertDialogTitle>
                               <AlertDialogDescription>
-                                คุณแน่ใจหรือไม่ที่จะลบที่อยู่ "{address.name}"? การดำเนินการนี้ไม่สามารถยกเลิกได้
+                                คุณแน่ใจหรือไม่ที่จะลบที่อยู่ &quot;{address.name}&quot;? การดำเนินการนี้ไม่สามารถยกเลิกได้
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

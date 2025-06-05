@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Edit, Trash2, Search, User, Shield, Crown } from 'lucide-react'
+import Image from 'next/image'
+import { Edit, Trash2, Search, User, Crown } from 'lucide-react'
 import axios from 'axios'
 import {
   Dialog,
@@ -70,14 +71,12 @@ const UserRoleForm = React.memo(({
   formData,
   setFormData,
   onSubmit, 
-  submitting,
-  showNotification
+  submitting
 }: { 
   formData: UserFormData;
   setFormData: React.Dispatch<React.SetStateAction<UserFormData>>;
   onSubmit: () => void;
   submitting: boolean;
-  showNotification: (type: 'success' | 'error', title: string, message: string) => void;
 }) => {
   const handleRoleChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, role: value as 'CUSTOMER' | 'ADMIN' }));
@@ -381,9 +380,11 @@ export default function AdminUsersPage() {
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                               {user.pictureUrl ? (
-                                <img
+                                <Image
                                   src={user.pictureUrl}
                                   alt={user.displayName || 'User'}
+                                  width={40}
+                                  height={40}
                                   className="w-10 h-10 rounded-full object-cover"
                                 />
                               ) : (
@@ -460,7 +461,7 @@ export default function AdminUsersPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete User</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete user "{user.displayName || user.lineUserId}"? This action cannot be undone.
+                                      Are you sure you want to delete user &quot;{user.displayName || user.lineUserId}&quot;? This action cannot be undone.
                                       {user._count && (user._count.orders > 0 || user._count.reviews > 0) && (
                                         <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
                                           <strong>Warning:</strong> This user has {user._count.orders} order(s) and {user._count.reviews} review(s) associated with their account.
@@ -504,7 +505,6 @@ export default function AdminUsersPage() {
                 setFormData={setFormData}
                 onSubmit={handleUpdate} 
                 submitting={submitting}
-                showNotification={showNotification}
               />
             </DialogContent>
           </Dialog>

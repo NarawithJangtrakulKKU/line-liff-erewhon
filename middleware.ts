@@ -6,6 +6,21 @@ import { getUserFromRequest } from '@/lib/jwt';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip middleware for static files, API routes, and Next.js internals
+  if (
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/images') ||
+    pathname.startsWith('/uploads') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml'
+  ) {
+    return NextResponse.next();
+  }
+
   // เส้นทางที่ต้องการ authentication
   const protectedPaths = [
     '/admin',
@@ -69,8 +84,11 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - images (public images)
+     * - uploads (public uploads)
+     * - static (static assets)
+     * - file extensions for static assets
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|images|uploads|static|robots.txt|sitemap.xml|.*\\.).*)',
   ],
 };
