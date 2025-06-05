@@ -4,13 +4,13 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useLiff } from '@/app/contexts/LiffContext'
+import { useCart } from '@/app/contexts/CartContext'
 import { 
   Minus, 
   Plus, 
   Trash2, 
   ShoppingBag, 
   ArrowLeft,
-  Heart,
   Truck,
   CreditCard,
   MapPin
@@ -65,6 +65,7 @@ interface CartSummary {
 
 export default function CartPage() {
   const { dbUser, profile, isInitialized, isLoggedIn } = useLiff()
+  const { refreshCart } = useCart()
   const router = useRouter()
   
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -159,13 +160,16 @@ export default function CartPage() {
           item.id === itemId ? { ...item, quantity: newQuantity } : item
         )
         calculateSummary(updatedItems)
+        
+        // รีเฟรช cart context
+        refreshCart()
       }
     } catch (error) {
       console.error('Error updating quantity:', error)
     } finally {
       setUpdating(null)
     }
-  }, [cartItems])
+  }, [cartItems, refreshCart])
 
   // Remove item from cart
   const removeItem = useCallback(async (itemId: string) => {
@@ -180,13 +184,16 @@ export default function CartPage() {
         const updatedItems = cartItems.filter(item => item.id !== itemId)
         setCartItems(updatedItems)
         calculateSummary(updatedItems)
+        
+        // รีเฟรช cart context
+        refreshCart()
       }
     } catch (error) {
       console.error('Error removing item:', error)
     } finally {
       setUpdating(null)
     }
-  }, [cartItems])
+  }, [cartItems, refreshCart])
 
   // Handle checkout
   const handleCheckout = () => {
@@ -420,9 +427,6 @@ export default function CartPage() {
                             
                             {/* Wishlist & Remove */}
                             <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="sm" className="cursor-pointer text-gray-400 hover:text-red-500">
-                                <Heart className="h-4 w-4" />
-                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button 

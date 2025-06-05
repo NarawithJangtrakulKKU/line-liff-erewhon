@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import { Plus, Edit, Trash2, Search, Eye, EyeOff, Upload, X, Package, Tag } from 'lucide-react'
 import axios from 'axios'
@@ -36,6 +36,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -92,6 +93,71 @@ interface ProductFormData {
   sortOrder: number
   categoryId: string
   images: string[]
+}
+
+// Image compression utility
+const compressImage = (file: File, maxWidth = 800, maxHeight = 600, quality = 0.8): Promise<File> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = document.createElement('img')
+    
+    img.onload = () => {
+      // Calculate new dimensions
+      let { width, height } = img
+      if (width > height) {
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+      } else {
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height
+          height = maxHeight
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now(),
+            })
+            resolve(compressedFile)
+          } else {
+            resolve(file)
+          }
+        },
+        file.type,
+        quality
+      )
+    }
+    
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+// Debounce utility
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
 }
 
 // Product Form Component
@@ -416,14 +482,22 @@ export default function AdminProductsPage() {
     images: []
   })
   const [submitting, setSubmitting] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreview, setImagePreview] = useState<string[]>([])
+  
+  // Bulk delete states
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   
   // Notification modal states
   const [showNotificationModal, setShowNotificationModal] = useState(false)
   const [notificationTitle, setNotificationTitle] = useState('')
   const [notificationMessage, setNotificationMessage] = useState('')
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success')
+
+  // Debounced search
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   // Memoized notification function
   const showNotification = useCallback((type: 'success' | 'error', title: string, message: string) => {
@@ -433,7 +507,7 @@ export default function AdminProductsPage() {
     setShowNotificationModal(true)
   }, [])
 
-  // Fetch products and categories
+  // Fetch products and categories - optimized
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
@@ -462,18 +536,94 @@ export default function AdminProductsPage() {
     fetchData()
   }, [fetchData])
 
-  // Filter products - memoized
-  const filteredProducts = React.useMemo(() => 
+  // Filter products - optimized with debounced search
+  const filteredProducts = useMemo(() => 
     products.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch = product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (product.description && product.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+        (product.sku && product.sku.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
       
       const matchesCategory = selectedCategory === 'all' || !selectedCategory || product.categoryId === selectedCategory;
       
       return matchesSearch && matchesCategory;
-    }), [products, searchTerm, selectedCategory]
+    }), [products, debouncedSearchTerm, selectedCategory]
   )
+
+  // Bulk selection handlers
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(new Set(filteredProducts.map(product => product.id)))
+    } else {
+      setSelectedProducts(new Set())
+    }
+  }, [filteredProducts])
+
+  const handleSelectProduct = useCallback((productId: string, checked: boolean) => {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(productId)
+      } else {
+        newSet.delete(productId)
+      }
+      return newSet
+    })
+  }, [])
+
+  // Bulk delete handler
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedProducts.size === 0) return
+
+    try {
+      setBulkDeleting(true)
+
+      // Get products to delete (for image cleanup)
+      const productsToDelete = products.filter(product => selectedProducts.has(product.id))
+      
+      // Delete products
+      await Promise.all(
+        Array.from(selectedProducts).map(productId =>
+          axios.delete(`/api/admin/products/${productId}`)
+        )
+      )
+
+      // Clean up images (if any)
+      const imageCleanupPromises = productsToDelete
+        .filter(product => product.images && product.images.length > 0)
+        .flatMap(product => 
+          product.images.map(image =>
+            axios.delete(`/api/admin/upload-image?imageUrl=${encodeURIComponent(image.imageUrl)}`)
+              .catch(error => console.error('Error deleting image:', error))
+          )
+        )
+
+      await Promise.all(imageCleanupPromises)
+
+      // Update products list
+      setProducts(prev => prev.filter(product => !selectedProducts.has(product.id)))
+      setSelectedProducts(new Set())
+      
+      showNotification(
+        'success', 
+        'Success', 
+        `Successfully deleted ${selectedProducts.size} product${selectedProducts.size === 1 ? '' : 's'}`
+      )
+    } catch (error) {
+      console.error('Error bulk deleting products:', error)
+      showNotification(
+        'error',
+        'Error',
+        axios.isAxiosError(error)
+          ? error.response?.data?.message || "Failed to delete products"
+          : "An error occurred while deleting products"
+      )
+    } finally {
+      setBulkDeleting(false)
+    }
+  }, [selectedProducts, products, showNotification])
+
+  // Check if all filtered products are selected
+  const isAllSelected = filteredProducts.length > 0 && filteredProducts.every(product => selectedProducts.has(product.id))
 
   // Reset form - memoized
   const resetForm = useCallback(() => {
@@ -503,12 +653,12 @@ export default function AdminProductsPage() {
     setImageFiles([])
   }, [imagePreview])
 
-  // Handle create - memoized
+  // Handle create - optimized with multipart/form-data
   const handleCreate = useCallback(async () => {
     try {
       setSubmitting(true)
       
-      // Create FormData instead of JSON
+      // Create FormData as API expects
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name)
       formDataToSend.append('description', formData.description)
@@ -522,9 +672,27 @@ export default function AdminProductsPage() {
       formDataToSend.append('sortOrder', formData.sortOrder.toString())
       formDataToSend.append('categoryId', formData.categoryId)
 
-      // Add image files (stored from previous uploads)
-      for (let i = 0; i < imageFiles.length; i++) {
-        formDataToSend.append(`images-${i}`, imageFiles[i])
+      // Compress and add image files
+      if (imageFiles.length > 0) {
+        setUploadingImages(true)
+        try {
+          const compressedFiles = await Promise.all(
+            imageFiles.map(file => compressImage(file, 800, 600, 0.8))
+          )
+          
+          // Add compressed images to FormData
+          compressedFiles.forEach((file, index) => {
+            formDataToSend.append(`images-${index}`, file)
+          })
+        } catch (error) {
+          console.error('Error compressing images:', error)
+          // Fall back to original files if compression fails
+          imageFiles.forEach((file, index) => {
+            formDataToSend.append(`images-${index}`, file)
+          })
+        } finally {
+          setUploadingImages(false)
+        }
       }
       
       const response = await axios.post('/api/admin/products', formDataToSend, {
@@ -533,6 +701,7 @@ export default function AdminProductsPage() {
         },
       })
       
+      // Optimistically update UI
       setProducts(prev => [...prev, response.data.product])
       setIsCreateModalOpen(false)
       resetForm()
@@ -548,6 +717,7 @@ export default function AdminProductsPage() {
       )
     } finally {
       setSubmitting(false)
+      setUploadingImages(false)
     }
   }, [formData, imageFiles, resetForm, showNotification])
 
@@ -572,14 +742,14 @@ export default function AdminProductsPage() {
     setIsEditModalOpen(true)
   }, [])
 
-  // Handle update - memoized
+  // Handle update - optimized with multipart/form-data
   const handleUpdate = useCallback(async () => {
     if (!selectedProduct) return
 
     try {
       setSubmitting(true)
       
-      // Create FormData instead of JSON
+      // Create FormData as API expects
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name)
       formDataToSend.append('description', formData.description)
@@ -598,15 +768,32 @@ export default function AdminProductsPage() {
         .filter(img => imagePreview.includes(img.imageUrl))
         .map(img => img.imageUrl)
       
-      // Add existing image URLs with proper indexing
       existingImages.forEach((imageUrl, index) => {
         formDataToSend.append(`existingImages-${index}`, imageUrl)
       })
 
-      // Add new image files (stored from previous uploads)
-      imageFiles.forEach((file, index) => {
-        formDataToSend.append(`images-${index}`, file)
-      })
+      // Compress and add new image files
+      if (imageFiles.length > 0) {
+        setUploadingImages(true)
+        try {
+          const compressedFiles = await Promise.all(
+            imageFiles.map(file => compressImage(file, 800, 600, 0.8))
+          )
+          
+          // Add compressed images to FormData
+          compressedFiles.forEach((file, index) => {
+            formDataToSend.append(`images-${index}`, file)
+          })
+        } catch (error) {
+          console.error('Error compressing images:', error)
+          // Fall back to original files if compression fails
+          imageFiles.forEach((file, index) => {
+            formDataToSend.append(`images-${index}`, file)
+          })
+        } finally {
+          setUploadingImages(false)
+        }
+      }
       
       const response = await axios.put(`/api/admin/products/${selectedProduct.id}`, formDataToSend, {
         headers: {
@@ -614,6 +801,7 @@ export default function AdminProductsPage() {
         },
       })
       
+      // Optimistically update UI
       setProducts(prev => 
         prev.map(product => product.id === selectedProduct.id ? response.data.product : product)
       )
@@ -631,38 +819,46 @@ export default function AdminProductsPage() {
       )
     } finally {
       setSubmitting(false)
+      setUploadingImages(false)
     }
   }, [selectedProduct, formData, imageFiles, imagePreview, resetForm, showNotification])
 
-  // Handle image upload - memoized
+  // Handle image upload - optimized
   const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
 
     // Validate files
+    const validFiles: File[] = []
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) {
         showNotification('error', 'Error', 'Please select valid image files only')
-        return
+        continue
       }
       if (file.size > 5 * 1024 * 1024) {
-        showNotification('error', 'Error', 'Each image should be less than 5MB')
-        return
+        showNotification('error', 'Error', `Image "${file.name}" is too large. Maximum size is 5MB`)
+        continue
       }
+      validFiles.push(file)
     }
 
-    // Store files and create preview URLs
-    const newFiles = Array.from(files)
-    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file))
+    if (validFiles.length === 0) return
+
+    // Create preview URLs immediately for better UX
+    const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file))
     
-    setImageFiles(prev => [...prev, ...newFiles])
+    // Update state immediately
+    setImageFiles(prev => [...prev, ...validFiles])
     setImagePreview(prev => [...prev, ...newPreviewUrls])
     
-    // Update form data with image URLs for display purposes
+    // Update form data for display purposes
     setFormData(prev => ({ 
       ...prev, 
       images: [...prev.images, ...newPreviewUrls] 
     }))
+
+    // Clear the input
+    event.target.value = ''
   }, [showNotification])
 
   // Remove image - memoized
@@ -817,37 +1013,75 @@ export default function AdminProductsPage() {
                   </Select>
                 </div>
                 
-                <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={resetForm}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Product
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Create New Product</DialogTitle>
-                      <DialogDescription>
-                        Add a new product to your inventory.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ProductForm 
-                      formData={formData}
-                      setFormData={setFormData}
-                      categories={categories}
-                      onSubmit={handleCreate} 
-                      submitLabel="Create Product" 
-                      mode="create"
-                      submitting={submitting}
-                      uploadingImage={false}
-                      imagePreview={imagePreview}
-                      setImagePreview={setImagePreview}
-                      onImageUpload={handleImageUpload}
-                      onRemoveImage={handleRemoveImage}
-                      showNotification={showNotification}
-                    />
-                  </DialogContent>
-                </Dialog>
+                <div className="flex items-center gap-2">
+                  {/* Bulk Delete Button */}
+                  {selectedProducts.size > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={bulkDeleting}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedProducts.size})`}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Multiple Products</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete {selectedProducts.size} selected product{selectedProducts.size === 1 ? '' : 's'}? This action cannot be undone.
+                            {products
+                              .filter(product => selectedProducts.has(product.id))
+                              .some(product => product.images && product.images.length > 0) && (
+                              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                <strong>Warning:</strong> Some selected products have images that will also be deleted.
+                              </div>
+                            )}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleBulkDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete All Selected
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                    <DialogTrigger asChild>
+                      <Button onClick={resetForm}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Product
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Create New Product</DialogTitle>
+                        <DialogDescription>
+                          Add a new product to your inventory.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ProductForm 
+                        formData={formData}
+                        setFormData={setFormData}
+                        categories={categories}
+                        onSubmit={handleCreate} 
+                        submitLabel="Create Product" 
+                        mode="create"
+                        submitting={submitting}
+                        uploadingImage={uploadingImages}
+                        imagePreview={imagePreview}
+                        setImagePreview={setImagePreview}
+                        onImageUpload={handleImageUpload}
+                        onRemoveImage={handleRemoveImage}
+                        showNotification={showNotification}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -858,6 +1092,11 @@ export default function AdminProductsPage() {
               <CardTitle>Products ({filteredProducts.length})</CardTitle>
               <CardDescription>
                 Manage your product inventory and details
+                {selectedProducts.size > 0 && (
+                  <span className="ml-2 text-blue-600 font-medium">
+                    ({selectedProducts.size} selected)
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -884,6 +1123,12 @@ export default function AdminProductsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={isAllSelected}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>Product</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Price</TableHead>
@@ -895,7 +1140,13 @@ export default function AdminProductsPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredProducts.map((product) => (
-                        <TableRow key={product.id}>
+                        <TableRow key={product.id} className={selectedProducts.has(product.id) ? "bg-blue-50" : ""}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedProducts.has(product.id)}
+                              onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-3">
                               {product.images.length > 0 ? (
@@ -1034,7 +1285,7 @@ export default function AdminProductsPage() {
                 submitLabel="Update Product" 
                 mode="edit"
                 submitting={submitting}
-                uploadingImage={false}
+                uploadingImage={uploadingImages}
                 imagePreview={imagePreview}
                 setImagePreview={setImagePreview}
                 onImageUpload={handleImageUpload}

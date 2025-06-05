@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useLiff } from '@/app/contexts/LiffContext';
+import { useCart } from '@/app/contexts/CartContext';
 import { 
   ChevronLeft, 
   ShoppingCart, 
@@ -135,6 +136,7 @@ interface ProductViewPageProps {
 export default function ProductViewPage({ productId }: ProductViewPageProps) {
   const router = useRouter();
   const { dbUser, isLoggedIn, isInitialized } = useLiff();
+  const { addToCart: addToCartContext } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
@@ -143,6 +145,8 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [notification, setNotification] = useState<Notification | null>(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showFullDescriptionInDetails, setShowFullDescriptionInDetails] = useState(false);
   
   // เพิ่ม states สำหรับ modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -221,25 +225,22 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
     try {
       setAddingToCart(true);
       
-      await axios.post('/api/cart', {
-        productId: product.id,
-        quantity: quantity,
-        userId: dbUser.id
-      });
+      // ใช้ Cart Context แทน axios โดยตรง
+      const success = await addToCartContext(product.id, quantity);
       
-      // แสดงข้อความสำเร็จ
-      showNotification('success', `เพิ่ม ${quantity} ชิ้นของ ${product.name} ลงตะกร้าแล้ว`);
-      
-      // รีเซ็ตจำนวนกลับเป็น 1
-      setQuantity(1);
+      if (success) {
+        // แสดงข้อความสำเร็จ
+        showNotification('success', `เพิ่ม ${quantity} ชิ้นของ ${product.name} ลงตะกร้าแล้ว`);
+        
+        // รีเซ็ตจำนวนกลับเป็น 1
+        setQuantity(1);
+      } else {
+        showNotification('error', 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้');
+      }
       
     } catch (error) {
       console.error('Error adding to cart:', error);
-      if (axios.isAxiosError(error)) {
-        showNotification('error', error.response?.data?.error || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้');
-      } else {
-        showNotification('error', 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
-      }
+      showNotification('error', 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setAddingToCart(false);
     }
@@ -489,7 +490,7 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
           {/* Product Images */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm aspect-square flex items-center justify-center relative">
+            <div className="bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm relative" style={{ aspectRatio: '1', maxHeight: '500px' }}>
               {mainImage ? (
                 <Image
                   src={mainImage}
@@ -507,13 +508,13 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
             
             {/* Thumbnail Images */}
             {product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
+              <div className="flex gap-2 overflow-x-auto pb-2">
                 {product.images.map((image, index) => (
                   <button
                     key={image.id}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImageIndex === index ? 'border-orange-500' : 'border-gray-200 hover:border-gray-300'
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                      selectedImageIndex === index ? 'border-orange-500 ring-2 ring-orange-200' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <Image
@@ -538,38 +539,38 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                 </Badge>
               )}
               {product.isFeatured && (
-                <Badge variant="secondary" className="mb-2 ml-2">
-                  Featured
+                <Badge variant="secondary" className="mb-2 ml-2 bg-orange-100 text-orange-800">
+                  ⭐ แนะนำ
                 </Badge>
               )}
-              <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
               {product.sku && (
-                <p className="text-sm text-gray-500 mt-1">SKU: {product.sku}</p>
+                <p className="text-sm text-gray-500 mb-2">รหัส: {product.sku}</p>
               )}
-              <div className="flex items-center mt-2">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-center">
                   {renderStars(product.averageRating)}
                 </div>
-                <span className="ml-2 text-sm text-gray-500">
-                  {product.averageRating.toFixed(1)} ({product.reviewCount} reviews)
+                <span className="text-sm text-gray-500">
+                  {product.averageRating.toFixed(1)} ({product.reviewCount} รีวิว)
                 </span>
               </div>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-baseline gap-3">
-                <div className="text-3xl font-bold text-gray-900">
+            <div className="bg-orange-50 rounded-lg p-4">
+              <div className="flex items-baseline gap-3 mb-2">
+                <div className="text-2xl md:text-3xl font-bold text-orange-600">
                   {formatCurrency(product.price)}
                 </div>
                 {product.comparePrice && product.comparePrice > product.price && (
-                  <div className="text-xl text-gray-500 line-through">
+                  <div className="text-lg text-gray-500 line-through">
                     {formatCurrency(product.comparePrice)}
                   </div>
                 )}
               </div>
               {product.comparePrice && product.comparePrice > product.price && (
                 <div className="text-sm text-green-600 font-medium">
-                  Save {formatCurrency(product.comparePrice - product.price)}
+                  ประหยัด {formatCurrency(product.comparePrice - product.price)}
                 </div>
               )}
             </div>
@@ -579,9 +580,35 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
             {product.description && (
               <div>
                 <h3 className="text-lg font-medium mb-2">Description</h3>
-                <p className="text-gray-600 whitespace-pre-line">
-                  {product.description}
-                </p>
+                <div className="text-gray-600">
+                  <p className={`whitespace-pre-line transition-all duration-300 ${
+                    showFullDescription ? '' : 'line-clamp-3'
+                  }`}>
+                    {product.description}
+                  </p>
+                  {product.description.length > 150 && (
+                    <button
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                      className="mt-2 text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1 transition-colors"
+                    >
+                      {showFullDescription ? (
+                        <>
+                          แสดงน้อยลง
+                          <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </>
+                      ) : (
+                        <>
+                          อ่านเพิ่มเติม
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             
@@ -676,66 +703,157 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
           
           <TabsContent value="details" className="p-6 bg-white border rounded-md mt-2">
             <h3 className="text-lg font-semibold mb-4">Product Details</h3>
-            <div className="prose max-w-none">
-              <p className="text-gray-600 whitespace-pre-line">
-                {product.description || 'No detailed information available for this product.'} 
-              </p>
+            <div className="space-y-6">
+              {product.description && (
+                <div>
+                  <h4 className="font-medium mb-3 text-gray-900">รายละเอียดสินค้า</h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className={`text-gray-600 leading-relaxed transition-all duration-300 ${
+                      showFullDescriptionInDetails ? '' : 'line-clamp-4'
+                    }`}>
+                      {product.description}
+                    </p>
+                    {product.description.length > 200 && (
+                      <button
+                        onClick={() => setShowFullDescriptionInDetails(!showFullDescriptionInDetails)}
+                        className="mt-3 text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center gap-1 transition-colors"
+                      >
+                        {showFullDescriptionInDetails ? (
+                          <>
+                            แสดงน้อยลง
+                            <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        ) : (
+                          <>
+                            อ่านเพิ่มเติม
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               
-              <div className="mt-6">
-                <h4 className="font-medium mb-3">Product Information</h4>
-                <ul className="list-disc list-inside space-y-2 text-gray-600">
-                  <li>Product ID: {product.id}</li>
-                  {product.sku && <li>SKU: {product.sku}</li>}
-                  {product.weight && <li>Weight: {product.weight}g</li>}
-                  <li>Stock: {product.stock} units available</li>
-                  <li>Category: {product.category?.name || 'Uncategorized'}</li>
-                  <li>Added on: {formatDate(product.createdAt)}</li>
-                  {product.updatedAt !== product.createdAt && (
-                    <li>Last updated: {formatDate(product.updatedAt)}</li>
-                  )}
-                </ul>
+              <div>
+                <h4 className="font-medium mb-3 text-gray-900">ข้อมูลพื้นฐาน</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">รหัสสินค้า:</span>
+                        <span className="text-sm font-medium">{product.sku || product.id}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">หมวดหมู่:</span>
+                        <span className="text-sm font-medium">{product.category?.name || 'ไม่ระบุ'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">สถานะ:</span>
+                        <span className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {product.stock > 0 ? `มีสินค้า ${product.stock} ชิ้น` : 'สินค้าหมด'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="space-y-3">
+                      {product.weight && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">น้ำหนัก:</span>
+                          <span className="text-sm font-medium">{product.weight}g</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">สินค้าแนะนำ:</span>
+                        <span className="text-sm font-medium">{product.isFeatured ? 'ใช่' : 'ไม่ใช่'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">คะแนนเฉลี่ย:</span>
+                        <span className="text-sm font-medium">{product.averageRating.toFixed(1)}/5.0</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-3 text-gray-900">วันที่เพิ่มสินค้า</h4>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="text-sm">
+                      <span className="text-gray-600">วันที่เพิ่ม: </span>
+                      <span className="font-medium">{formatDate(product.createdAt)}</span>
+                    </div>
+                    {product.updatedAt !== product.createdAt && (
+                      <div className="text-sm">
+                        <span className="text-gray-600">อัปเดตล่าสุด: </span>
+                        <span className="font-medium">{formatDate(product.updatedAt)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>
           
           <TabsContent value="specifications" className="p-6 bg-white border rounded-md mt-2">
             <h3 className="text-lg font-semibold mb-4">Technical Specifications</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="border-b border-gray-200 pb-2">
-                <p className="text-sm text-gray-500">Product Name</p>
-                <p className="font-medium">{product.name}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">ชื่อสินค้า</div>
+                <div className="font-medium text-gray-900">{product.name}</div>
               </div>
+              
               {product.sku && (
-                <div className="border-b border-gray-200 pb-2">
-                  <p className="text-sm text-gray-500">SKU</p>
-                  <p className="font-medium">{product.sku}</p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">รหัสสินค้า</div>
+                  <div className="font-medium text-gray-900">{product.sku}</div>
                 </div>
               )}
-              <div className="border-b border-gray-200 pb-2">
-                <p className="text-sm text-gray-500">Price</p>
-                <p className="font-medium">{formatCurrency(product.price)}</p>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">ราคา</div>
+                <div className="font-medium text-gray-900">{formatCurrency(product.price)}</div>
               </div>
+              
               {product.weight && (
-                <div className="border-b border-gray-200 pb-2">
-                  <p className="text-sm text-gray-500">Weight</p>
-                  <p className="font-medium">{product.weight}g</p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">น้ำหนัก</div>
+                  <div className="font-medium text-gray-900">{product.weight}g</div>
                 </div>
               )}
-              <div className="border-b border-gray-200 pb-2">
-                <p className="text-sm text-gray-500">Category</p>
-                <p className="font-medium">{product.category?.name || 'Uncategorized'}</p>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">หมวดหมู่</div>
+                <div className="font-medium text-gray-900">{product.category?.name || 'ไม่ระบุ'}</div>
               </div>
-              <div className="border-b border-gray-200 pb-2">
-                <p className="text-sm text-gray-500">Stock Status</p>
-                <p className="font-medium">{product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}</p>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">สถานะสินค้า</div>
+                <div className={`font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {product.stock > 0 ? `มีสินค้า ${product.stock} ชิ้น` : 'สินค้าหมด'}
+                </div>
               </div>
-              <div className="border-b border-gray-200 pb-2">
-                <p className="text-sm text-gray-500">Featured Product</p>
-                <p className="font-medium">{product.isFeatured ? 'Yes' : 'No'}</p>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">สินค้าแนะนำ</div>
+                <div className="font-medium text-gray-900">{product.isFeatured ? 'ใช่' : 'ไม่ใช่'}</div>
               </div>
-              <div className="border-b border-gray-200 pb-2">
-                <p className="text-sm text-gray-500">Average Rating</p>
-                <p className="font-medium">{product.averageRating.toFixed(1)}/5.0</p>
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">คะแนนเฉลี่ย</div>
+                <div className="font-medium text-gray-900 flex items-center gap-1">
+                  {product.averageRating.toFixed(1)}/5.0
+                  <div className="flex ml-1">
+                    {renderStars(product.averageRating)}
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>

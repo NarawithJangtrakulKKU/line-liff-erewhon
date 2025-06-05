@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 import { Menu, X, User, ShoppingCart } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useLiff } from '@/app/contexts/LiffContext';
-import axios from 'axios';
+import { useCart } from '@/app/contexts/CartContext';
 
 export default function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [cartCount, setCartCount] = useState(0);
     const { dbUser } = useLiff();
+    const { cartCount } = useCart();
     const pathname = usePathname();
 
     useEffect(() => {
@@ -24,26 +24,6 @@ export default function Navbar() {
             window.removeEventListener("scroll", handleScroll);
         };
     }, []);
-
-    useEffect(() => {
-        const fetchCartCount = async () => {
-            if (!dbUser?.id) {
-                console.log('[Navbar] dbUser.id is missing:', dbUser);
-                setCartCount(0);
-                return;
-            }
-            try {
-                console.log('[Navbar] Fetching cart for userId:', dbUser.id);
-                const res = await axios.get(`/api/cart`, { params: { userId: dbUser.id } });
-                console.log('[Navbar] cart API response:', res.data);
-                setCartCount(res.data.items?.length || 0);
-            } catch (e) {
-                console.error('[Navbar] Error fetching cart:', e);
-                setCartCount(0);
-            }
-        };
-        fetchCartCount();
-    }, [dbUser]);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);

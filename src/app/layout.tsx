@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Kanit } from "next/font/google";
 import "./globals.css";
 import { LiffProvider } from "@/app/contexts/LiffContext";
+import { CartProvider } from "@/app/contexts/CartContext";
 
 const kanit = Kanit({
   subsets: ["latin"],
@@ -25,7 +26,9 @@ export default function RootLayout({
         className={`${kanit.className} antialiased`}
       >
         <LiffProvider>
-          {children}
+          <CartProvider>
+            {children}
+          </CartProvider>
         </LiffProvider>
       </body>
     </html>
