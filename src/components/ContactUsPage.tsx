@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
+
+interface AttachedFile {
+    name: string;
+    size: number;
+    type: string;
+    base64: string;
+}
 
 export default function ContactUsPage() {
     const [selectedIssue, setSelectedIssue] = useState('order');
@@ -11,6 +18,8 @@ export default function ContactUsPage() {
         email: '',
         message: ''
     });
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const issueTypes = [
         { id: 'order', label: 'ปัญหาการสั่งซื้อ', icon: '📦' },
@@ -36,9 +45,94 @@ export default function ContactUsPage() {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const convertToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files) {
+            const fileList = Array.from(files);
+            
+            for (const file of fileList) {
+                // ตรวจสอบขนาดไฟล์ (สูงสุด 5MB ต่อไฟล์)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (สูงสุด 5MB)`);
+                    continue;
+                }
+                
+                // ตรวจสอบชนิดไฟล์
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert(`ไฟล์ ${file.name} ไม่รองรับ (รองรับเฉพาะ JPG, PNG, GIF, PDF)`);
+                    continue;
+                }
+                
+                try {
+                    const base64 = await convertToBase64(file);
+                    const attachedFile: AttachedFile = {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        base64: base64
+                    };
+                    
+                    setAttachedFiles(prev => [...prev, attachedFile]);
+                } catch (error) {
+                    console.error('Error converting file to base64:', error);
+                    alert(`เกิดข้อผิดพลาดในการประมวลผลไฟล์ ${file.name}`);
+                }
+            }
+        }
+    };
+
+    const removeFile = (index: number) => {
+        setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleAttachmentClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log('Form submitted:', { selectedIssue, ...formData });
+        
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    selectedIssue,
+                    ...formData,
+                    attachments: attachedFiles
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('ส่งข้อความสำเร็จ! เราจะติดต่อกลับไปโดยเร็วที่สุด');
+                setFormData({
+                    name: '',
+                    phone: '',
+                    email: '',
+                    message: ''
+                });
+                setAttachedFiles([]);
+            } else {
+                alert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่ทราบสาเหตุ'));
+            }
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            alert('เกิดข้อผิดพลาด การเชื่อมต่อ: ' + (error instanceof Error ? error.message : String(error)));
+        }
     };
 
     const currentIssueLabel = issueTypes.find(issue => issue.id === selectedIssue)?.label;
@@ -163,16 +257,59 @@ export default function ContactUsPage() {
                                     required
                                     className="w-full p-4 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 resize-vertical"
                                 />
-                                <button
-                                    type="button"
-                                    className="bg-yellow-100 text-gray-900 px-6 py-3 rounded-lg font-medium hover:bg-yellow-200 flex items-center space-x-2"
-                                >
-                                    <span>แนบรูปภาพ</span>
-                                    <span>📎</span>
-                                </button>
+                                
+                                {/* File Upload Section */}
+                                <div>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileSelect}
+                                        multiple
+                                        accept=".jpg,.jpeg,.png,.gif,.pdf"
+                                        className="hidden"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAttachmentClick}
+                                        className="bg-yellow-100 text-gray-900 px-6 py-3 rounded-lg font-medium hover:bg-yellow-200 flex items-center space-x-2 transition-colors"
+                                    >
+                                        <span>แนบรูปภาพ</span>
+                                        <span>📎</span>
+                                    </button>
+                                    
+                                    {/* Display attached files */}
+                                    {attachedFiles.length > 0 && (
+                                        <div className="mt-4 space-y-2">
+                                            <p className="text-sm text-gray-400">ไฟล์ที่แนบ:</p>
+                                            {attachedFiles.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-700">
+                                                    <div className="flex items-center space-x-3">
+                                                        <span className="text-yellow-400">
+                                                            {file.type.startsWith('image/') ? '🖼️' : '📄'}
+                                                        </span>
+                                                        <div>
+                                                            <p className="text-white text-sm font-medium">{file.name}</p>
+                                                            <p className="text-gray-400 text-xs">
+                                                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeFile(index)}
+                                                        className="text-red-400 hover:text-red-300 px-2 py-1 rounded transition-colors"
+                                                    >
+                                                        ❌
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                
                                 <button
                                     type="submit"
-                                    className="w-full bg-yellow-100 text-gray-900 py-4 rounded-lg font-semibold text-lg hover:bg-yellow-200"
+                                    className="w-full bg-yellow-100 text-gray-900 py-4 rounded-lg font-semibold text-lg hover:bg-yellow-200 transition-colors"
                                 >
                                     ส่ง
                                 </button>

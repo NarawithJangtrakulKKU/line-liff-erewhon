@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
 
   // เส้นทางที่ต้องการ authentication
   const protectedPaths = [
-    '/admin',
+    // '/admin', // Temporarily disabled for development
     '/profile',
     '/cart',
     '/checkout',
@@ -31,7 +31,7 @@ export function middleware(request: NextRequest) {
   ];
 
   // เส้นทางที่เฉพาะ admin เท่านั้น
-  const adminPaths = ['/admin'];
+  const adminPaths: string[] = []; // Temporarily disabled for development
 
   // ตรวจสอบว่าเส้นทางปัจจุบันต้องการ authentication หรือไม่
   const isProtectedPath = protectedPaths.some(path => 

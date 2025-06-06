@@ -31,7 +31,7 @@ export default function ContactPressPage() {
         }));
     };
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (formData.email !== formData.confirmEmail) {
@@ -39,21 +39,40 @@ export default function ContactPressPage() {
             return;
         }
 
-        console.log('Press Inquiry submitted:', {
-            ...formData,
-            timestamp: new Date().toISOString()
-        });
-
-        alert('ขอบคุณครับ! คำขอสอบถามข้อมูลสื่อของคุณได้รับการส่งเรียบร้อยแล้ว');
-
-        setFormData({
-            newsSource: '',
-            articleBrief: '',
-            questionsForReview: '',
-            email: '',
-            confirmEmail: '',
-            deadline: ''
-        });
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    selectedIssue: 'press',
+                    name: 'สื่อมวลชน', // Generic name for press inquiries
+                    email: formData.email,
+                    phone: '', // Not collected in press form
+                    message: `แหล่งข่าว: ${formData.newsSource}\nสาระสำคัญ: ${formData.articleBrief}\nคำถาม: ${formData.questionsForReview}\nกำหนดส่ง: ${formData.deadline}`,
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('ขอบคุณครับ! คำขอสอบถามข้อมูลสื่อของคุณได้รับการส่งเรียบร้อยแล้ว');
+                setFormData({
+                    newsSource: '',
+                    articleBrief: '',
+                    questionsForReview: '',
+                    email: '',
+                    confirmEmail: '',
+                    deadline: ''
+                });
+            } else {
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+            }
+        } catch (error) {
+            console.error('Error submitting press inquiry:', error);
+            alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        }
     };
 
     return (

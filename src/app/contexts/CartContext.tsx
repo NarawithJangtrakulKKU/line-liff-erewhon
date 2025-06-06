@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useLiff } from './LiffContext';
 import axios from 'axios';
 
@@ -19,7 +19,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { dbUser } = useLiff();
 
   // ฟังก์ชันดึงข้อมูลตะกร้า
-  const refreshCart = async () => {
+  const refreshCart = useCallback(async () => {
     if (!dbUser?.id) {
       setCartCount(0);
       return;
@@ -37,7 +37,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dbUser?.id]);
 
   // ฟังก์ชันเพิ่มสินค้าลงตะกร้า
   const addToCart = async (productId: string, quantity: number = 1): Promise<boolean> => {
@@ -77,7 +77,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } else {
       setCartCount(0);
     }
-  }, [dbUser]);
+  }, [dbUser, refreshCart]);
 
   const contextValue: CartContextType = {
     cartCount,

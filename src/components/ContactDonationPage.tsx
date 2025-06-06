@@ -20,9 +20,46 @@ export default function ContactDonationPage() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Submitted Donation Request:', formData);
+        
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    selectedIssue: 'donation',
+                    name: `${formData.firstName} ${formData.lastName}`,
+                    email: formData.email,
+                    phone: '', // Not collected in donation form
+                    message: `องค์กร: ${formData.orgName}\nเว็บไซต์: ${formData.orgWebsite}\nพันธกิจ: ${formData.mission}\nการใช้งาน: ${formData.usage}\nคำขอ: ${formData.request}`,
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('ส่งคำขอรับบริจาคสำเร็จ! เราจะพิจารณาและติดต่อกลับไป');
+                setFormData({
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    confirmEmail: '',
+                    orgName: '',
+                    orgWebsite: '',
+                    mission: '',
+                    usage: '',
+                    request: '',
+                });
+            } else {
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+            }
+        } catch (error) {
+            console.error('Error submitting donation request:', error);
+            alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        }
     };
 
     return (

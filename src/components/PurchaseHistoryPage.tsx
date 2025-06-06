@@ -329,29 +329,7 @@ export default function PurchaseHistoryPage() {
     })
   }, [])
 
-  // ฟังก์ชันสำหรับ chunked upload
-  const uploadFileInChunks = useCallback(async (file: File, uploadUrl: string, chunkSize = 1024 * 1024): Promise<void> => {
-    const totalChunks = Math.ceil(file.size / chunkSize)
-    
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * chunkSize
-      const end = Math.min(start + chunkSize, file.size)
-      const chunk = file.slice(start, end)
-      
-      const formData = new FormData()
-      formData.append('chunk', chunk)
-      formData.append('chunkIndex', chunkIndex.toString())
-      formData.append('totalChunks', totalChunks.toString())
-      formData.append('fileName', file.name)
-      
-      await axios.post(uploadUrl, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      
-      const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100)
-      setUploadProgress(progress)
-    }
-  }, [])
+
 
   useEffect(() => {
     if (isInitialized && !isLoggedIn) {

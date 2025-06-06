@@ -14,7 +14,6 @@ import {
   ShoppingCart, 
   Package, 
   DollarSign,
-  BarChart3,
   Activity,
   AlertCircle,
   CheckCircle,
@@ -192,12 +191,24 @@ export default function AdminAnalyticsPage() {
   }
 
   // Custom tooltip for sales chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipPayload {
+    color: string
+    dataKey: string
+    value: number
+  }
+
+  interface CustomTooltipProps {
+    active?: boolean
+    payload?: TooltipPayload[]
+    label?: string
+  }
+
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 border rounded-lg shadow-lg">
           <p className="font-medium">{`ช่วงเวลา: ${label}`}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: TooltipPayload, index: number) => (
             <p key={index} style={{ color: entry.color }}>
               {entry.dataKey === 'revenue' 
                 ? `รายได้: ${formatCurrency(entry.value)}`
@@ -212,7 +223,20 @@ export default function AdminAnalyticsPage() {
   }
 
   // Custom tooltip for pie chart
-  const PieTooltip = ({ active, payload }: any) => {
+  interface PiePayload {
+    payload: {
+      method: string
+      total: number
+      count: number
+    }
+  }
+
+  interface PieTooltipProps {
+    active?: boolean
+    payload?: PiePayload[]
+  }
+
+  const PieTooltip = ({ active, payload }: PieTooltipProps) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
@@ -506,7 +530,7 @@ export default function AdminAnalyticsPage() {
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={({ method, percent }: any) => `${method} ${(percent * 100).toFixed(0)}%`}
+                                label={({ method, percent }: { method: string; percent: number }) => `${method} ${(percent * 100).toFixed(0)}%`}
                                 outerRadius={80}
                                 fill="#8884d8"
                                 dataKey="total"
@@ -566,7 +590,7 @@ export default function AdminAnalyticsPage() {
                                 width={60}
                               />
                               <Tooltip
-                                formatter={(value: any, name: string) => [
+                                formatter={(value: number, name: string) => [
                                   name === 'totalRevenue' ? formatCurrency(value) : formatNumber(value),
                                   name === 'totalRevenue' ? 'รายได้' : 'จำนวนขาย'
                                 ]}

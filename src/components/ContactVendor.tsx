@@ -106,14 +106,55 @@ const VendorClaimsForm: React.FC = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (validateForm()) {
-            console.log('Form submitted:', formData);
-            console.log('Uploaded files:', uploadedFiles);
-            // Handle form submission here
-            alert('Form submitted successfully!');
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        selectedIssue: 'vendor',
+                        name: formData.contactName,
+                        email: formData.contactEmail,
+                        phone: formData.contactPhone,
+                        message: `ผู้จำหน่าย: ${formData.vendorName}\nเลขใบแจ้งหนี้: ${formData.invoiceNumber}\nเลข PO: ${formData.purchaseOrderNumber}\nยอดใบแจ้งหนี้: $${formData.invoiceAmount}\nยอดจ่าย: $${formData.invoicePaymentAmount}\nยอดเคลม: $${formData.claimedShortageAmount}\nหมายเหตุ: ${formData.notes}`,
+                    }),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('ส่งคำขอเคลมสำเร็จ! เราจะติดต่อกลับไปเร็ว ๆ นี้');
+                    setFormData({
+                        vendorName: '',
+                        contactName: '',
+                        contactEmail: '',
+                        contactPhone: '',
+                        invoiceDate: '',
+                        invoiceNumber: '',
+                        purchaseOrderNumber: '',
+                        invoiceAmount: '',
+                        invoicePaymentAmount: '',
+                        claimedShortageAmount: '',
+                        notes: '',
+                        termsAccepted: false,
+                    });
+                    setUploadedFiles({
+                        purchaseOrder: null,
+                        invoice: null,
+                        proofOfDelivery: null,
+                    });
+                } else {
+                    alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                }
+            } catch (error) {
+                console.error('Error submitting vendor claim:', error);
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+            }
         }
     };
 
