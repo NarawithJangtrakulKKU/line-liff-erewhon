@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Upload, Calendar } from 'lucide-react';
+import { Upload, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface FormData {
     vendorName: string;
@@ -45,6 +47,20 @@ const VendorClaimsForm: React.FC = () => {
         proofOfDelivery: null,
     });
 
+    // Modal states
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'success' | 'error' | 'warning'>('success');
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalMessage, setModalMessage] = useState('');
+
+    // Helper function to show modal
+    const showModal = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalOpen(true);
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
 
@@ -78,7 +94,7 @@ const VendorClaimsForm: React.FC = () => {
                 [type]: file
             }));
         } else if (file) {
-            alert('File size must be less than 10MB');
+            showModal('warning', 'ไฟล์ขนาดใหญ่เกินไป', 'ขนาดไฟล์ต้องไม่เกิน 10MB');
         }
     };
 
@@ -117,18 +133,19 @@ const VendorClaimsForm: React.FC = () => {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        selectedIssue: 'vendor',
+                        issueType: 'vendor', // เปลี่ยนจาก selectedIssue เป็น issueType
                         name: formData.contactName,
                         email: formData.contactEmail,
                         phone: formData.contactPhone,
                         message: `ผู้จำหน่าย: ${formData.vendorName}\nเลขใบแจ้งหนี้: ${formData.invoiceNumber}\nเลข PO: ${formData.purchaseOrderNumber}\nยอดใบแจ้งหนี้: $${formData.invoiceAmount}\nยอดจ่าย: $${formData.invoicePaymentAmount}\nยอดเคลม: $${formData.claimedShortageAmount}\nหมายเหตุ: ${formData.notes}`,
+                        attachments: [], // ไม่มีไฟล์แนบ
                     }),
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('ส่งคำขอเคลมสำเร็จ! เราจะติดต่อกลับไปเร็ว ๆ นี้');
+                    showModal('success', 'ส่งคำขอเคลมสำเร็จ!', 'เราจะติดต่อกลับไปเร็ว ๆ นี้');
                     setFormData({
                         vendorName: '',
                         contactName: '',
@@ -149,11 +166,11 @@ const VendorClaimsForm: React.FC = () => {
                         proofOfDelivery: null,
                     });
                 } else {
-                    alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                    showModal('error', 'เกิดข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
                 }
             } catch (error) {
                 console.error('Error submitting vendor claim:', error);
-                alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                showModal('error', 'เกิดข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
             }
         }
     };
@@ -454,6 +471,39 @@ const VendorClaimsForm: React.FC = () => {
                     </div>
                 </form>
             </div>
+
+            {/* Modal */}
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <div className="flex items-center space-x-2">
+                            {modalType === 'success' && <CheckCircle className="w-6 h-6 text-green-600" />}
+                            {modalType === 'error' && <AlertCircle className="w-6 h-6 text-red-600" />}
+                            {modalType === 'warning' && <AlertCircle className="w-6 h-6 text-yellow-600" />}
+                            <DialogTitle className="text-lg font-semibold">
+                                {modalTitle}
+                            </DialogTitle>
+                        </div>
+                        <DialogDescription className="text-sm text-gray-600 mt-2">
+                            {modalMessage}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end mt-4">
+                        <Button
+                            onClick={() => setModalOpen(false)}
+                            className={`px-6 py-2 rounded-lg font-medium ${
+                                modalType === 'success' 
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : modalType === 'error'
+                                    ? 'bg-red-600 hover:bg-red-700 text-white'  
+                                    : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                            }`}
+                        >
+                            ตกลง
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

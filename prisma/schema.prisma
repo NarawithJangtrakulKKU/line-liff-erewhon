@@ -266,7 +266,7 @@ model ReviewHelpful {
 // ✅ ตารางติดต่อเรา - เก็บข้อมูลการติดต่อจากลูกค้า
 model Contact {
   id            String   @id @default(cuid())
-  selectedIssue String   // ประเภทปัญหา (order, corporate, membership, etc.)
+  issueType     String   // ประเภทปัญหา (order, corporate, membership, etc.)
   name          String   // ชื่อผู้ติดต่อ
   phone         String   // เบอร์โทรศัพท์
   email         String   // อีเมล
@@ -291,7 +291,8 @@ model ContactAttachment {
   fileName  String   // ชื่อไฟล์
   fileType  String   // ประเภทไฟล์ (image/jpeg, application/pdf, etc.)
   fileSize  Int      // ขนาดไฟล์ (bytes)
-  base64Data String  // ข้อมูลไฟล์ในรูปแบบ base64
+  filePath  String   // path ของไฟล์ในระบบ (แทน base64)
+  attachmentType AttachmentType // ประเภทการแยกไฟล์
   createdAt DateTime @default(now())
 
   // Relations
@@ -348,4 +349,11 @@ enum ContactStatus {
   IN_PROGRESS   // กำลังดำเนินการ
   RESOLVED      // แก้ไขเสร็จสิ้น
   CLOSED        // ปิดเรื่อง
+}
+
+// ✅ Enum สำหรับประเภทไฟล์แนบ
+enum AttachmentType {
+  IMAGE         // รูปภาพ (JPG, PNG, GIF)
+  PDF           // เอกสาร PDF
+  DOC           // เอกสาร Word (DOC, DOCX)
 }

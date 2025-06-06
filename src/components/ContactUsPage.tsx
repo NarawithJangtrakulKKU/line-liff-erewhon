@@ -1,7 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import Image from 'next/image';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertCircle, CheckCircle, X, Paperclip } from 'lucide-react';
 
 interface AttachedFile {
     name: string;
@@ -19,7 +25,22 @@ export default function ContactUsPage() {
         message: ''
     });
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Modal states
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'success' | 'error' | 'warning'>('success');
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalMessage, setModalMessage] = useState('');
+
+    // Helper function to show modal
+    const showModal = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalOpen(true);
+    };
 
     const issueTypes = [
         { id: 'order', label: 'ปัญหาการสั่งซื้อ', icon: '📦' },
@@ -62,14 +83,22 @@ export default function ContactUsPage() {
             for (const file of fileList) {
                 // ตรวจสอบขนาดไฟล์ (สูงสุด 5MB ต่อไฟล์)
                 if (file.size > 5 * 1024 * 1024) {
-                    alert(`ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (สูงสุด 5MB)`);
+                    showModal('warning', 'ไฟล์ขนาดใหญ่เกินไป', `ไฟล์ ${file.name} มีขนาดใหญ่เกินไป (สูงสุด 5MB)`);
                     continue;
                 }
                 
                 // ตรวจสอบชนิดไฟล์
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+                const allowedTypes = [
+                    'image/jpeg', 
+                    'image/jpg', 
+                    'image/png', 
+                    'image/gif', 
+                    'application/pdf',
+                    'application/msword', // .doc
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // .docx
+                ];
                 if (!allowedTypes.includes(file.type)) {
-                    alert(`ไฟล์ ${file.name} ไม่รองรับ (รองรับเฉพาะ JPG, PNG, GIF, PDF)`);
+                    showModal('warning', 'ไฟล์ไม่รองรับ', `ไฟล์ ${file.name} ไม่รองรับ (รองรับเฉพาะ JPG, PNG, GIF, PDF, DOC, DOCX)`);
                     continue;
                 }
                 
@@ -85,7 +114,7 @@ export default function ContactUsPage() {
                     setAttachedFiles(prev => [...prev, attachedFile]);
                 } catch (error) {
                     console.error('Error converting file to base64:', error);
-                    alert(`เกิดข้อผิดพลาดในการประมวลผลไฟล์ ${file.name}`);
+                    showModal('error', 'ข้อผิดพลาดในการประมวลผลไฟล์', `เกิดข้อผิดพลาดในการประมวลผลไฟล์ ${file.name}`);
                 }
             }
         }
@@ -109,16 +138,24 @@ export default function ContactUsPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    selectedIssue,
-                    ...formData,
-                    attachments: attachedFiles
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    issueType: selectedIssue,
+                    message: formData.message,
+                    attachments: attachedFiles.map((file) => ({
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileSize: file.size,
+                        base64Data: file.base64.split(',')[1],
+                    })),
                 }),
             });
             
             const result = await response.json();
             
             if (result.success) {
-                alert('ส่งข้อความสำเร็จ! เราจะติดต่อกลับไปโดยเร็วที่สุด');
+                showModal('success', 'ส่งข้อความสำเร็จ!', 'เราจะติดต่อกลับไปโดยเร็วที่สุด');
                 setFormData({
                     name: '',
                     phone: '',
@@ -126,12 +163,13 @@ export default function ContactUsPage() {
                     message: ''
                 });
                 setAttachedFiles([]);
+                setSelectedIssue('');
             } else {
-                alert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่ทราบสาเหตุ'));
+                showModal('error', 'เกิดข้อผิดพลาด', result.message || 'ไม่ทราบสาเหตุ');
             }
         } catch (error) {
             console.error('Error submitting form:', error);
-            alert('เกิดข้อผิดพลาด การเชื่อมต่อ: ' + (error instanceof Error ? error.message : String(error)));
+            showModal('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', error instanceof Error ? error.message : String(error));
         }
     };
 
@@ -265,7 +303,7 @@ export default function ContactUsPage() {
                                         ref={fileInputRef}
                                         onChange={handleFileSelect}
                                         multiple
-                                        accept=".jpg,.jpeg,.png,.gif,.pdf"
+                                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
                                         className="hidden"
                                     />
                                     <button
@@ -273,7 +311,7 @@ export default function ContactUsPage() {
                                         onClick={handleAttachmentClick}
                                         className="bg-yellow-100 text-gray-900 px-6 py-3 rounded-lg font-medium hover:bg-yellow-200 flex items-center space-x-2 transition-colors"
                                     >
-                                        <span>แนบรูปภาพ</span>
+                                        <span>แนบไฟล์</span>
                                         <span>📎</span>
                                     </button>
                                     
@@ -285,7 +323,9 @@ export default function ContactUsPage() {
                                                 <div key={index} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-700">
                                                     <div className="flex items-center space-x-3">
                                                         <span className="text-yellow-400">
-                                                            {file.type.startsWith('image/') ? '🖼️' : '📄'}
+                                                            {file.type.startsWith('image/') ? '🖼️' : 
+                                                             file.type === 'application/pdf' ? '📄' :
+                                                             file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? '📝' : '📄'}
                                                         </span>
                                                         <div>
                                                             <p className="text-white text-sm font-medium">{file.name}</p>
@@ -318,6 +358,39 @@ export default function ContactUsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Modal for alerts */}
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <div className="flex items-center space-x-2">
+                            {modalType === 'success' && <CheckCircle className="w-6 h-6 text-green-600" />}
+                            {modalType === 'error' && <AlertCircle className="w-6 h-6 text-red-600" />}
+                            {modalType === 'warning' && <AlertCircle className="w-6 h-6 text-yellow-600" />}
+                            <DialogTitle className="text-lg font-semibold">
+                                {modalTitle}
+                            </DialogTitle>
+                        </div>
+                        <DialogDescription className="text-sm text-gray-600 mt-2">
+                            {modalMessage}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end mt-4">
+                        <Button
+                            onClick={() => setModalOpen(false)}
+                            className={`px-6 py-2 rounded-lg font-medium ${
+                                modalType === 'success' 
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : modalType === 'error'
+                                    ? 'bg-red-600 hover:bg-red-700 text-white'  
+                                    : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                            }`}
+                        >
+                            ตกลง
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -1,24 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FileText, Filter, Download, Eye, Clock, User, Phone, Mail, Paperclip, Image as ImageIcon } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar, Search, ExternalLink } from 'lucide-react';
 
-interface AttachedFile {
-  name: string;
-  size: number;
-  type: string;
-  base64: string;
+interface ContactAttachment {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  filePath: string;
+  attachmentType: 'IMAGE' | 'PDF' | 'DOC';
+  createdAt: string;
 }
 
 interface ContactSubmission {
   id: string;
-  selectedIssue: string;
   name: string;
-  phone: string;
   email: string;
+  phone: string;
+  issueType: string;
   message: string;
-  attachments: AttachedFile[];
-  submittedAt: string;
+  status: string;
+  attachments: ContactAttachment[];
+  createdAt: string;
 }
 
 export default function AdminReportsPage() {
@@ -92,13 +102,13 @@ export default function AdminReportsPage() {
       headers.join(','),
       ...filteredSubmissions.map(submission => [
         submission.id,
-        getIssueTypeLabel(submission.selectedIssue),
+        getIssueTypeLabel(submission.issueType),
         submission.name,
         submission.phone,
         submission.email,
         `"${submission.message.replace(/"/g, '""')}"`,
         submission.attachments?.length || 0,
-        formatDate(submission.submittedAt)
+        formatDate(submission.createdAt)
       ].join(','))
     ].join('\n');
 
@@ -112,7 +122,7 @@ export default function AdminReportsPage() {
   const ImageViewer = () => {
     if (selectedImageIndex === null || !selectedSubmission) return null;
     
-    const imageAttachments = selectedSubmission.attachments.filter(att => att.type.startsWith('image/'));
+    const imageAttachments = selectedSubmission?.attachments?.filter(att => att.attachmentType === 'IMAGE') || [];
     const currentImage = imageAttachments[selectedImageIndex];
     
     if (!currentImage) return null;
@@ -127,14 +137,14 @@ export default function AdminReportsPage() {
             ×
           </button>
           <img
-            src={currentImage.base64}
-            alt={currentImage.name}
+            src={currentImage.filePath}
+            alt={currentImage.fileName}
             className="max-w-full max-h-full object-contain"
           />
           <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white p-2 rounded">
-            <p className="text-sm">{currentImage.name}</p>
+            <p className="text-sm">{currentImage.fileName}</p>
             <p className="text-xs opacity-75">
-              {selectedImageIndex + 1} / {imageAttachments.length} - {(currentImage.size / 1024 / 1024).toFixed(2)} MB
+              {selectedImageIndex + 1} / {imageAttachments.length} - {(currentImage.fileSize / 1024 / 1024).toFixed(2)} MB
             </p>
           </div>
           {imageAttachments.length > 1 && (
@@ -163,8 +173,7 @@ export default function AdminReportsPage() {
   const DetailModal = () => {
     if (!selectedSubmission) return null;
 
-    const imageAttachments = selectedSubmission.attachments?.filter(att => att.type.startsWith('image/')) || [];
-    const otherAttachments = selectedSubmission.attachments?.filter(att => !att.type.startsWith('image/')) || [];
+    // Removed unused variables - displaying all attachments in one list now
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -172,10 +181,10 @@ export default function AdminReportsPage() {
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center space-x-3">
-                <span className="text-2xl">{getIssueTypeIcon(selectedSubmission.selectedIssue)}</span>
+                <span className="text-2xl">{getIssueTypeIcon(selectedSubmission.issueType)}</span>
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">
-                    {getIssueTypeLabel(selectedSubmission.selectedIssue)}
+                    {getIssueTypeLabel(selectedSubmission.issueType)}
                   </h3>
                   <p className="text-sm text-gray-500">ID: {selectedSubmission.id}</p>
                 </div>
@@ -208,7 +217,7 @@ export default function AdminReportsPage() {
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-gray-400" />
                   <span className="text-sm text-gray-600">วันที่ส่ง:</span>
-                  <span className="text-sm font-medium">{formatDate(selectedSubmission.submittedAt)}</span>
+                  <span className="text-sm font-medium">{formatDate(selectedSubmission.createdAt)}</span>
                 </div>
               </div>
               
@@ -220,64 +229,61 @@ export default function AdminReportsPage() {
               </div>
 
               {/* Attachments Section */}
-              {(imageAttachments.length > 0 || otherAttachments.length > 0) && (
+                              {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
                 <div>
                   <div className="flex items-center space-x-2 mb-3">
                     <Paperclip className="w-4 h-4 text-gray-400" />
                     <label className="text-sm text-gray-600">ไฟล์แนบ ({selectedSubmission.attachments.length} ไฟล์):</label>
                   </div>
                   
-                  {/* Image Attachments */}
-                  {imageAttachments.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">รูปภาพ:</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {imageAttachments.map((attachment, index) => (
-                          <div 
-                            key={index}
-                            className="relative group cursor-pointer"
-                            onClick={() => setSelectedImageIndex(index)}
-                          >
-                            <img
-                              src={attachment.base64}
-                              alt={attachment.name}
-                              className="w-full h-24 object-cover rounded-lg border hover:shadow-md transition-shadow"
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all rounded-lg flex items-center justify-center">
-                              <ImageIcon className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                            <div className="absolute bottom-1 left-1 right-1">
-                              <p className="text-xs text-white bg-black bg-opacity-50 rounded px-1 truncate">
-                                {attachment.name}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Other Attachments */}
-                  {otherAttachments.length > 0 && (
+                  {/* ไฟล์แนบทั้งหมด */}
+                  {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">ไฟล์อื่นๆ:</h4>
-                      <div className="space-y-2">
-                        {otherAttachments.map((attachment, index) => (
-                          <div key={index} className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border">
-                            <span className="text-blue-500">📄</span>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {(attachment.size / 1024 / 1024).toFixed(2)} MB • {attachment.type}
-                              </p>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Attachments:</h4>
+                      <div className="space-y-3">
+                        {selectedSubmission.attachments.map((attachment, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-xl">
+                                {attachment.attachmentType === 'IMAGE' ? '🖼️' :
+                                 attachment.attachmentType === 'PDF' ? '📄' :
+                                 attachment.attachmentType === 'DOC' ? '📝' : '📄'}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {attachment.fileName}
+                                  <span className="ml-2 text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded uppercase">
+                                    ({attachment.attachmentType})
+                                  </span>
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {(attachment.fileSize / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
                             </div>
-                            <a
-                              href={attachment.base64}
-                              download={attachment.name}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              ดาวน์โหลด
-                            </a>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => window.open(`/api/attachments${attachment.filePath}`, '_blank')}
+                                className="flex items-center space-x-1 px-3 py-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors text-sm font-medium"
+                              >
+                                <Eye className="w-4 h-4" />
+                                <span>View</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = `/api/attachments${attachment.filePath}?download=true`;
+                                  link.download = attachment.fileName;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                className="flex items-center space-x-1 px-3 py-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors text-sm font-medium"
+                              >
+                                <Download className="w-4 h-4" />
+                                <span>Download</span>
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -378,7 +384,7 @@ export default function AdminReportsPage() {
                 <p className="text-sm font-medium text-gray-500">วันนี้</p>
                 <p className="text-2xl font-semibold text-gray-900">
                   {submissions.filter(s => 
-                    new Date(s.submittedAt).toDateString() === new Date().toDateString()
+                    new Date(s.createdAt).toDateString() === new Date().toDateString()
                   ).length}
                 </p>
               </div>
@@ -395,7 +401,7 @@ export default function AdminReportsPage() {
                   {submissions.length > 0 ? getIssueTypeLabel(
                     Object.entries(
                       submissions.reduce((acc: any, curr) => {
-                        acc[curr.selectedIssue] = (acc[curr.selectedIssue] || 0) + 1;
+                        acc[curr.issueType] = (acc[curr.issueType] || 0) + 1;
                         return acc;
                       }, {})
                     ).sort(([,a], [,b]) => (b as number) - (a as number))[0]?.[0] || 'order'
@@ -454,9 +460,9 @@ export default function AdminReportsPage() {
                     <tr key={submission.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <span className="text-lg mr-2">{getIssueTypeIcon(submission.selectedIssue)}</span>
+                          <span className="text-lg mr-2">{getIssueTypeIcon(submission.issueType)}</span>
                           <span className="text-sm font-medium text-gray-900">
-                            {getIssueTypeLabel(submission.selectedIssue)}
+                            {getIssueTypeLabel(submission.issueType)}
                           </span>
                         </div>
                       </td>
@@ -475,7 +481,7 @@ export default function AdminReportsPage() {
                               <span className="text-sm text-gray-600">
                                 {submission.attachments.length} ไฟล์
                               </span>
-                              {submission.attachments.some(att => att.type.startsWith('image/')) && (
+                              {submission.attachments.some(att => att.attachmentType === 'IMAGE') && (
                                 <ImageIcon className="w-4 h-4 text-blue-500" />
                               )}
                             </>
@@ -485,7 +491,7 @@ export default function AdminReportsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(submission.submittedAt)}
+                        {formatDate(submission.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
