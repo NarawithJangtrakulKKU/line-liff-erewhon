@@ -263,6 +263,43 @@ model ReviewHelpful {
   @@map("review_helpful")
 }
 
+// ✅ ตารางติดต่อเรา - เก็บข้อมูลการติดต่อจากลูกค้า
+model Contact {
+  id            String   @id @default(cuid())
+  selectedIssue String   // ประเภทปัญหา (order, corporate, membership, etc.)
+  name          String   // ชื่อผู้ติดต่อ
+  phone         String   // เบอร์โทรศัพท์
+  email         String   // อีเมล
+  message       String   // ข้อความ
+  status        ContactStatus @default(PENDING) // สถานะการจัดการ
+  adminNotes    String?  // หมายเหตุจากแอดมิน
+  resolvedAt    DateTime? // วันที่แก้ไขเสร็จ
+  resolvedBy    String?  // ใครแก้ไข
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  attachments   ContactAttachment[]
+
+  @@map("contacts")
+}
+
+// ✅ ตารางไฟล์แนบในการติดต่อ
+model ContactAttachment {
+  id        String   @id @default(cuid())
+  contactId String
+  fileName  String   // ชื่อไฟล์
+  fileType  String   // ประเภทไฟล์ (image/jpeg, application/pdf, etc.)
+  fileSize  Int      // ขนาดไฟล์ (bytes)
+  base64Data String  // ข้อมูลไฟล์ในรูปแบบ base64
+  createdAt DateTime @default(now())
+
+  // Relations
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("contact_attachments")
+}
+
 // Enums
 enum UserRole {
   CUSTOMER      // ลูกค้าทั่วไป
@@ -303,4 +340,12 @@ enum ShippingMethod {
 enum MediaType {
   IMAGE         // รูปภาพ (JPG, PNG, GIF, WebP)
   VIDEO         // วิดีโอ (MP4, WebM, MOV)
+}
+
+// ✅ Enum สำหรับสถานะการติดต่อ
+enum ContactStatus {
+  PENDING       // รอการตอบกลับ
+  IN_PROGRESS   // กำลังดำเนินการ
+  RESOLVED      // แก้ไขเสร็จสิ้น
+  CLOSED        // ปิดเรื่อง
 }
