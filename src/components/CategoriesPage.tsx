@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, Plus, Filter, Grid, List, Search, Star, ShoppingBag, Heart, Share2 } from 'lucide-react';
+import { ChevronLeft, Grid, List, Search, Star, ShoppingBag, Heart } from 'lucide-react';
 import Link from 'next/link';
 import axios from 'axios';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,7 +85,7 @@ export default function CategoriesPage({ categoryId }: CategoriesPageProps) {
 
     // Filter and sort products
     const filteredAndSortedProducts = useMemo(() => {
-        let filtered = products.filter(product => 
+        const filtered = products.filter(product => 
             product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
         );
@@ -434,7 +434,7 @@ export default function CategoriesPage({ categoryId }: CategoriesPageProps) {
                                 {/* Sort */}
                                 <select
                                     value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value as any)}
+                                    onChange={(e) => setSortBy(e.target.value as 'name' | 'price-low' | 'price-high' | 'featured')}
                                     className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-200 rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                                 >
                                     <option value="featured">แนะนำ</option>

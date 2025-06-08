@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function ContactDonationPage() {
     const [formData, setFormData] = useState({
@@ -15,14 +18,66 @@ export default function ContactDonationPage() {
         request: '',
     });
 
+    // Modal states
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'success' | 'error'>('success');
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalMessage, setModalMessage] = useState('');
+
+    // Helper function to show modal
+    const showModal = (type: 'success' | 'error', title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalOpen(true);
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Submitted Donation Request:', formData);
+        
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    issueType: 'donation',
+                    name: `${formData.firstName} ${formData.lastName}`,
+                    email: formData.email,
+                    phone: '', // Not collected in donation form
+                    message: `องค์กร: ${formData.orgName}\nเว็บไซต์: ${formData.orgWebsite}\nพันธกิจ: ${formData.mission}\nการใช้งาน: ${formData.usage}\nคำขอ: ${formData.request}`,
+                    attachments: [],
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showModal('success', 'ส่งคำขอรับบริจาคสำเร็จ!', 'เราจะพิจารณาและติดต่อกลับไป');
+                setFormData({
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    confirmEmail: '',
+                    orgName: '',
+                    orgWebsite: '',
+                    mission: '',
+                    usage: '',
+                    request: '',
+                });
+            } else {
+                showModal('error', 'เกิดข้อผิดพลาด', result.message || 'กรุณาลองใหม่อีกครั้ง');
+            }
+        } catch (error) {
+            console.error('Error submitting donation request:', error);
+            showModal('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'กรุณาลองใหม่อีกครั้ง');
+        }
     };
 
     return (
@@ -174,6 +229,36 @@ export default function ContactDonationPage() {
                     <p>ช่องที่มีเครื่องหมาย * จำเป็นต้องกรอก</p>
                 </div>
             </form>
+
+            {/* Modal */}
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <div className="flex items-center space-x-2">
+                            {modalType === 'success' && <CheckCircle className="w-6 h-6 text-green-600" />}
+                            {modalType === 'error' && <AlertCircle className="w-6 h-6 text-red-600" />}
+                            <DialogTitle className="text-lg font-semibold">
+                                {modalTitle}
+                            </DialogTitle>
+                        </div>
+                        <DialogDescription className="text-sm text-gray-600 mt-2">
+                            {modalMessage}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end mt-4">
+                        <Button
+                            onClick={() => setModalOpen(false)}
+                            className={`px-6 py-2 rounded-lg font-medium ${
+                                modalType === 'success' 
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : 'bg-red-600 hover:bg-red-700 text-white'  
+                            }`}
+                        >
+                            ตกลง
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

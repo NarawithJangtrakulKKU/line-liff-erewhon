@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, ChangeEvent, FormEvent } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 interface FormData {
     newsSource: string;
@@ -21,6 +24,20 @@ export default function ContactPressPage() {
         deadline: ''
     });
 
+    // Modal states
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'success' | 'error' | 'warning'>('success');
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalMessage, setModalMessage] = useState('');
+
+    // Helper function to show modal
+    const showModal = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalOpen(true);
+    };
+
     const handleInputChange = (
         e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
@@ -31,29 +48,49 @@ export default function ContactPressPage() {
         }));
     };
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (formData.email !== formData.confirmEmail) {
-            alert('อีเมลไม่ตรงกัน กรุณาตรวจสอบและลองใหม่อีกครั้ง');
+            showModal('warning', 'อีเมลไม่ตรงกัน', 'กรุณาตรวจสอบและลองใหม่อีกครั้ง');
             return;
         }
 
-        console.log('Press Inquiry submitted:', {
-            ...formData,
-            timestamp: new Date().toISOString()
-        });
-
-        alert('ขอบคุณครับ! คำขอสอบถามข้อมูลสื่อของคุณได้รับการส่งเรียบร้อยแล้ว');
-
-        setFormData({
-            newsSource: '',
-            articleBrief: '',
-            questionsForReview: '',
-            email: '',
-            confirmEmail: '',
-            deadline: ''
-        });
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    issueType: 'press', // เปลี่ยนจาก selectedIssue เป็น issueType
+                    name: 'สื่อมวลชน', // Generic name for press inquiries
+                    email: formData.email,
+                    phone: '', // Not collected in press form
+                    message: `แหล่งข่าว: ${formData.newsSource}\nสาระสำคัญ: ${formData.articleBrief}\nคำถาม: ${formData.questionsForReview}\nกำหนดส่ง: ${formData.deadline}`,
+                    attachments: [], // ไม่มีไฟล์แนบ
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showModal('success', 'ส่งคำขอสำเร็จ!', 'คำขอสอบถามข้อมูลสื่อของคุณได้รับการส่งเรียบร้อยแล้ว');
+                setFormData({
+                    newsSource: '',
+                    articleBrief: '',
+                    questionsForReview: '',
+                    email: '',
+                    confirmEmail: '',
+                    deadline: ''
+                });
+            } else {
+                showModal('error', 'เกิดข้อผิดพลาด', result.message || 'กรุณาลองใหม่อีกครั้ง');
+            }
+        } catch (error) {
+            console.error('Error submitting press inquiry:', error);
+            showModal('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'กรุณาลองใหม่อีกครั้ง');
+        }
     };
 
     return (
@@ -177,6 +214,39 @@ export default function ContactPressPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal */}
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <div className="flex items-center space-x-2">
+                            {modalType === 'success' && <CheckCircle className="w-6 h-6 text-green-600" />}
+                            {modalType === 'error' && <AlertCircle className="w-6 h-6 text-red-600" />}
+                            {modalType === 'warning' && <AlertCircle className="w-6 h-6 text-yellow-600" />}
+                            <DialogTitle className="text-lg font-semibold">
+                                {modalTitle}
+                            </DialogTitle>
+                        </div>
+                        <DialogDescription className="text-sm text-gray-600 mt-2">
+                            {modalMessage}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end mt-4">
+                        <Button
+                            onClick={() => setModalOpen(false)}
+                            className={`px-6 py-2 rounded-lg font-medium ${
+                                modalType === 'success' 
+                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                    : modalType === 'error'
+                                    ? 'bg-red-600 hover:bg-red-700 text-white'  
+                                    : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                            }`}
+                        >
+                            ตกลง
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

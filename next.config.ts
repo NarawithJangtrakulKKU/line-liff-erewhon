@@ -3,17 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
-    serverComponentsExternalPackages: ['prisma'],
     // Enable experimental features for better performance
     optimizeCss: true,
-    optimizeServerReact: true,
-  },
-  // Add API configuration for large file uploads
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb', // Increase size limit for file uploads
-    },
-    responseLimit: '100mb',
   },
   images: {
     remotePatterns: [
@@ -38,11 +29,6 @@ const nextConfig: NextConfig = {
   // Optimize output for better performance
   output: 'standalone',
   generateEtags: true,
-  // Add timeout configuration for API routes
-  serverRuntimeConfig: {
-    // Increase timeout for file processing
-    maxDuration: 300, // 5 minutes
-  },
   async headers() {
     return [
       {

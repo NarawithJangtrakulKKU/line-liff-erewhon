@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
-import { pipeline } from 'stream/promises'
-import { createReadStream, createWriteStream } from 'fs'
+import { createWriteStream } from 'fs'
 
 const prisma = new PrismaClient()
 

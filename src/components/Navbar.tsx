@@ -4,13 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X, User, ShoppingCart } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useLiff } from '@/app/contexts/LiffContext';
 import { useCart } from '@/app/contexts/CartContext';
 
 export default function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const { dbUser } = useLiff();
     const { cartCount } = useCart();
     const pathname = usePathname();
 

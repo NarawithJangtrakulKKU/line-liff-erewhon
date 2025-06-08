@@ -7,8 +7,7 @@ import axios from 'axios'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Star,
@@ -18,11 +17,8 @@ import {
   Package,
   Users,
   BarChart3,
-  Filter,
-  Search,
   Eye,
   ThumbsUp,
-  ThumbsDown,
   AlertTriangle,
   CheckCircle,
   RefreshCw
@@ -75,15 +71,6 @@ interface RecentReview {
   hasMedia: boolean
 }
 
-interface ReviewSummary {
-  period: string
-  excellent: number // 5 stars
-  good: number // 4 stars
-  average: number // 3 stars
-  poor: number // 2 stars
-  terrible: number // 1 star
-}
-
 export default function AdminReviewPage() {
   const router = useRouter()
   
@@ -103,13 +90,7 @@ export default function AdminReviewPage() {
   const [topRatedProducts, setTopRatedProducts] = useState<ProductRating[]>([])
   const [lowRatedProducts, setLowRatedProducts] = useState<ProductRating[]>([])
   const [recentReviews, setRecentReviews] = useState<RecentReview[]>([])
-  const [reviewTrends, setReviewTrends] = useState<ReviewSummary[]>([])
-  
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('')
-  const [ratingFilter, setRatingFilter] = useState<string>('all')
   const [timeFilter, setTimeFilter] = useState<string>('30d')
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
   // Fetch review data
   const fetchReviewData = useCallback(async (showRefreshing = false) => {
@@ -126,21 +107,18 @@ export default function AdminReviewPage() {
         statsRes,
         topProductsRes,
         lowProductsRes,
-        recentReviewsRes,
-        trendsRes
+        recentReviewsRes
       ] = await Promise.all([
         axios.get('/api/admin/reviews/stats'),
         axios.get('/api/admin/reviews/top-products'),
         axios.get('/api/admin/reviews/low-products'),
-        axios.get('/api/admin/reviews/recent'),
-        axios.get('/api/admin/reviews/trends?period=' + timeFilter)
+        axios.get('/api/admin/reviews/recent')
       ])
 
       setReviewStats(statsRes.data)
       setTopRatedProducts(topProductsRes.data.products || [])
       setLowRatedProducts(lowProductsRes.data.products || [])
       setRecentReviews(recentReviewsRes.data.reviews || [])
-      setReviewTrends(trendsRes.data.trends || [])
 
     } catch (error) {
       console.error('Error fetching review data:', error)
@@ -211,7 +189,7 @@ export default function AdminReviewPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [timeFilter])
+  }, [])
 
   useEffect(() => {
     fetchReviewData()
@@ -508,7 +486,7 @@ export default function AdminReviewPage() {
               <CardContent>
                 <div className="space-y-3 md:space-y-4">
                   {lowRatedProducts.length > 0 ? (
-                    lowRatedProducts.map((product, index) => {
+                    lowRatedProducts.map((product) => {
                       const status = getProductStatus(product.averageRating)
                       return (
                         <div key={product.productId} className="flex items-center justify-between p-2 md:p-3 bg-red-50 rounded-lg border border-red-200">
