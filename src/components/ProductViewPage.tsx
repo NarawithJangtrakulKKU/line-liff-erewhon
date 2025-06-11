@@ -7,8 +7,7 @@ import { useLiff } from '@/app/contexts/LiffContext';
 import { useCart } from '@/app/contexts/CartContext';
 import { 
   ChevronLeft, 
-  ShoppingCart, 
-  Heart, 
+  ShoppingCart,
   Star, 
   Share2, 
   Check, 
@@ -681,9 +680,6 @@ export default function ProductViewPage({ productId }: ProductViewPageProps) {
                       {!isLoggedIn ? 'Login to Add to Cart' : 'Add to Cart'}
                     </>
                   )}
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Heart className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="icon" onClick={shareProduct}>
                   <Share2 className="h-4 w-4" />

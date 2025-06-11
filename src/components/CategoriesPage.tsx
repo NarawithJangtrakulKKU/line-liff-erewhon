@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, Grid, List, Search, Star, ShoppingBag, Heart } from 'lucide-react';
+import { ChevronLeft, Grid, List, Search, Star, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import axios from 'axios';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -163,9 +163,6 @@ export default function CategoriesPage({ categoryId }: CategoriesPageProps) {
                             <button className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95">
                                 <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
                             </button>
-                            <button className="hidden sm:flex w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 rounded-full items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95">
-                                <Heart className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -266,9 +263,6 @@ export default function CategoriesPage({ categoryId }: CategoriesPageProps) {
                         <div className="flex items-center gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <button className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-gray-100 hover:bg-orange-500 hover:text-white rounded-full flex items-center justify-center transition-all duration-300">
                                 <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
-                            </button>
-                            <button className="hidden sm:flex w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-gray-100 hover:bg-orange-500 hover:text-white rounded-full items-center justify-center transition-all duration-300">
-                                <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                             </button>
                         </div>
                     </div>
