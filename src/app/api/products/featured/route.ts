@@ -23,6 +23,16 @@ export async function GET() {
             sortOrder: 'asc'
           },
           take: 1 // Get only the first image for each product
+        },
+        reviews: {
+          select: {
+            rating: true
+          }
+        },
+        _count: {
+          select: {
+            reviews: true
+          }
         }
       },
       orderBy: [
@@ -32,9 +42,24 @@ export async function GET() {
       take: 6 // Limit to 6 featured products
     })
 
+    // Calculate averageRating for each product
+    const productsWithRating = products.map(product => {
+      const averageRating = product.reviews.length > 0
+        ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+        : 0;
+
+      const { reviews, _count, ...productData } = product;
+      
+      return {
+        ...productData,
+        averageRating: averageRating,
+        reviewCount: _count.reviews
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      products
+      products: productsWithRating
     })
   } catch (error) {
     console.error('Error fetching featured products:', error)

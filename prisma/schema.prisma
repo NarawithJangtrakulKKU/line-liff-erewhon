@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,98 +7,83 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ตาราง Users - เก็บข้อมูลผู้ใช้จาก LINE
 model User {
-  id          String   @id @default(cuid())
-  lineUserId  String   @unique // LINE User ID
-  displayName String?  // ชื่อจาก LINE Profile
-  pictureUrl  String?  // รูปโปรไฟล์จาก LINE
-  email       String?  // อีเมลหากมี
-  phone       String?  // เบอร์โทรศัพท์
-  role        UserRole @default(CUSTOMER) // บทบาทของผู้ใช้
-  isActive    Boolean  @default(true) // สถานะการใช้งาน
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  id          String     @id @default(cuid())
+  lineUserId  String     @unique
+  displayName String?
+  pictureUrl  String?
+  email       String?
+  phone       String?
+  role        UserRole   @default(CUSTOMER)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   addresses   Address[]
-  orders      Order[]
   cartItems   CartItem[]
+  orders      Order[]
   reviews     Review[]
 
   @@map("users")
 }
 
-// ตารางที่อยู่ของผู้ใช้
 model Address {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
-  name        String  // ชื่อผู้รับ
-  phone       String  // เบอร์โทรผู้รับ
-  address     String  // ที่อยู่เต็ม
-  district    String  // ตำบล/แขวง
-  subDistrict String  // อำเภอ/เขต
-  province    String  // จังหวัด
-  postalCode  String  // รหัสไปรษณีย์
-  isDefault   Boolean @default(false) // ที่อยู่หลัก
+  name        String
+  phone       String
+  address     String
+  district    String
+  subDistrict String
+  province    String
+  postalCode  String
+  isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Relations
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders      Order[]
 
   @@map("addresses")
 }
 
-// ตารางหมวดหมู่สินค้า
 model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String    @id @default(cuid())
+  name        String    @unique
   description String?
   imageUrl    String?
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   products    Product[]
 
   @@map("categories")
 }
 
-// ตารางสินค้า
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  comparePrice Decimal? @db.Decimal(10, 2) // ราคาเปรียบเทียบ (ราคาขีดฆ่า)
-  sku         String?  @unique // รหัสสินค้า
-  stock       Int      @default(0)
-  weight      Decimal? @db.Decimal(8, 2) // น้ำหนัก (กรัม)
-  isActive    Boolean  @default(true)
-  isFeatured  Boolean  @default(false) // สินค้าแนะนำ
-  sortOrder   Int      @default(0)
-  image       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Foreign Keys
-  categoryId  String
-
-  // Relations
-  category    Category @relation(fields: [categoryId], references: [id])
-  images      ProductImage[]
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
-  reviews     Review[]
+  id           String         @id @default(cuid())
+  name         String
+  description  String?
+  price        Decimal        @db.Decimal(10, 2)
+  comparePrice Decimal?       @db.Decimal(10, 2)
+  sku          String?        @unique
+  stock        Int            @default(0)
+  weight       Decimal?       @db.Decimal(8, 2)
+  isActive     Boolean        @default(true)
+  isFeatured   Boolean        @default(false)
+  sortOrder    Int            @default(0)
+  image        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  categoryId   String
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  images       ProductImage[]
+  category     Category       @relation(fields: [categoryId], references: [id])
+  reviews      Review[]
 
   @@map("products")
 }
 
-// ตารางรูปภาพสินค้า
 model ProductImage {
   id        String   @id @default(cuid())
   productId String
@@ -112,14 +91,11 @@ model ProductImage {
   altText   String?
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
-
-  // Relations
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_images")
 }
 
-// ตารางตระกร้าสินค้า
 model CartItem {
   id        String   @id @default(cuid())
   userId    String
@@ -127,233 +103,199 @@ model CartItem {
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@map("cart_items")
 }
 
-// ตารางคำสั่งซื้อ
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String      @unique // เลขที่คำสั่งซื้อ
+  id              String           @id @default(cuid())
+  orderNumber     String           @unique
   userId          String
   addressId       String
-  status          OrderStatus @default(PENDING)
-  paymentStatus   PaymentStatus @default(PENDING)
+  status          OrderStatus      @default(PENDING)
+  paymentStatus   PaymentStatus    @default(PENDING)
   paymentMethod   PaymentMethod?
   shippingMethod  ShippingMethod?
   paymentSlipUrl  String?
-  subtotal        Decimal     @db.Decimal(10, 2) // ยอดรวมสินค้า
-  shippingFee     Decimal     @db.Decimal(10, 2) @default(0) // ค่าจัดส่ง
-  tax             Decimal     @db.Decimal(10, 2) @default(0) // ภาษี
-  discount        Decimal     @db.Decimal(10, 2) @default(0) // ส่วนลด
-  total           Decimal     @db.Decimal(10, 2) // ยอดรวมสุทธิ
-  notes           String?     // หมายเหตุ
-  trackingNumber  String?     // เลขติดตามพัสดุ
-  shippedAt       DateTime?   // วันที่จัดส่ง
-  deliveredAt     DateTime?   // วันที่ได้รับสินค้า
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  // Relations
-  user            User        @relation(fields: [userId], references: [id])
-  address         Address     @relation(fields: [addressId], references: [id])
+  subtotal        Decimal          @db.Decimal(10, 2)
+  shippingFee     Decimal          @default(0) @db.Decimal(10, 2)
+  tax             Decimal          @default(0) @db.Decimal(10, 2)
+  discount        Decimal          @default(0) @db.Decimal(10, 2)
+  total           Decimal          @db.Decimal(10, 2)
+  notes           String?
+  trackingNumber  String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   orderItems      OrderItem[]
   orderStatusLogs OrderStatusLog[]
-  reviews         Review[]    // ✅ เพิ่ม relation ใหม่
+  address         Address          @relation(fields: [addressId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  reviews         Review[]
 
   @@map("orders")
 }
 
-// ตารางรายการสินค้าในคำสั่งซื้อ
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   orderId   String
   productId String
   quantity  Int
-  price     Decimal @db.Decimal(10, 2) // ราคา ณ ขณะที่สั่งซื้อ
-  total     Decimal @db.Decimal(10, 2) // ยอดรวมของรายการนี้
-
-  // Relations
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
-  reviews   Review[] // ✅ เพิ่ม relation ใหม่ - รีวิวเฉพาะสินค้าในออเดอร์นี้
+  price     Decimal  @db.Decimal(10, 2)
+  total     Decimal  @db.Decimal(10, 2)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+  reviews   Review[]
 
   @@map("order_items")
 }
 
-// ตารางบันทึกการเปลี่ยนแปลงสถานะคำสั่งซื้อ
 model OrderStatusLog {
   id        String      @id @default(cuid())
   orderId   String
   status    OrderStatus
   notes     String?
   createdAt DateTime    @default(now())
-
-  // Relations
   order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_status_logs")
 }
 
-// ✅ ตารางรีวิวสินค้า - ปรับปรุงใหม่
 model Review {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   userId      String
   productId   String
-  orderId     String   // ✅ เพิ่ม orderId - รีวิวต้องเชื่อมกับ order เฉพาะ
-  orderItemId String   // ✅ เพิ่ม orderItemId - รีวิวเฉพาะสินค้าใน order item
-  rating      Int      // คะแนน 1-5
+  rating      Int
   comment     String?
-  
-  // ✅ Media files - รองรับทั้งรูปและวิดีโอ
-  mediaFiles  ReviewMedia[] // relation กับตาราง ReviewMedia
-  
-  isVerified  Boolean  @default(false) // ✅ ตรวจสอบว่าซื้อจริงหรือไม่
-  isHelpful   Int      @default(0) // ✅ จำนวนคนที่กดว่ารีวิวนี้มีประโยชน์
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  isHelpful   Int           @default(0)
+  isVerified  Boolean       @default(false)
+  orderId     String
+  orderItemId String
+  mediaFiles  ReviewMedia[]
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem   OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-
-  // ✅ เปลี่ยน unique constraint - ให้รีวิวได้ครั้งเดียวต่อ orderItem
-  @@unique([userId, orderItemId]) // ผู้ใช้รีวิวสินค้าใน order item เดียวกันได้ครั้งเดียว
+  @@unique([userId, orderItemId])
   @@map("reviews")
 }
 
-// ✅ ตารางสำหรับเก็บไฟล์มีเดียในรีวิว (รูป/วิดีโอ)
 model ReviewMedia {
-  id          String      @id @default(cuid())
-  reviewId    String
-  mediaType   MediaType   // IMAGE หรือ VIDEO
-  mediaUrl    String      // URL ของไฟล์
-  thumbnailUrl String?    // thumbnail สำหรับวิดีโอ
-  fileName    String?     // ชื่อไฟล์เดิม
-  fileSize    Int?        // ขนาดไฟล์ (bytes)
-  duration    Int?        // ความยาววิดีโอ (seconds) - สำหรับวิดีโอเท่านั้น
-  altText     String?     // alternative text สำหรับ accessibility
-  sortOrder   Int         @default(0) // ลำดับการแสดง
-  createdAt   DateTime    @default(now())
-
-  // Relations
-  review      Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  reviewId     String
+  mediaType    MediaType
+  mediaUrl     String
+  thumbnailUrl String?
+  fileName     String?
+  fileSize     Int?
+  duration     Int?
+  altText      String?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  review       Review    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   @@map("review_media")
 }
 
-// ✅ เพิ่มตารางสำหรับ Review Helpfulness (การโหวตว่ารีวิวมีประโยชน์)
 model ReviewHelpful {
-  id       String @id @default(cuid())
-  reviewId String
-  userId   String
-  isHelpful Boolean // true = helpful, false = not helpful
+  id        String   @id @default(cuid())
+  reviewId  String
+  userId    String
+  isHelpful Boolean
   createdAt DateTime @default(now())
 
-  // Relations (อ้างอิงแยกเพื่อหลีกเลี่ยง circular dependency)
-  @@unique([reviewId, userId]) // ผู้ใช้โหวตรีวิวเดียวกันได้ครั้งเดียว
+  @@unique([reviewId, userId])
   @@map("review_helpful")
 }
 
-// ✅ ตารางติดต่อเรา - เก็บข้อมูลการติดต่อจากลูกค้า
 model Contact {
-  id            String   @id @default(cuid())
-  issueType     String   // ประเภทปัญหา (order, corporate, membership, etc.)
-  name          String   // ชื่อผู้ติดต่อ
-  phone         String   // เบอร์โทรศัพท์
-  email         String   // อีเมล
-  message       String   // ข้อความ
-  status        ContactStatus @default(PENDING) // สถานะการจัดการ
-  adminNotes    String?  // หมายเหตุจากแอดมิน
-  resolvedAt    DateTime? // วันที่แก้ไขเสร็จ
-  resolvedBy    String?  // ใครแก้ไข
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  attachments   ContactAttachment[]
+  id          String              @id @default(cuid())
+  name        String
+  phone       String
+  email       String
+  message     String
+  status      ContactStatus       @default(PENDING)
+  adminNotes  String?
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  issueType   String
+  attachments ContactAttachment[]
 
   @@map("contacts")
 }
 
-// ✅ ตารางไฟล์แนบในการติดต่อ
 model ContactAttachment {
-  id        String   @id @default(cuid())
-  contactId String
-  fileName  String   // ชื่อไฟล์
-  fileType  String   // ประเภทไฟล์ (image/jpeg, application/pdf, etc.)
-  fileSize  Int      // ขนาดไฟล์ (bytes)
-  filePath  String   // path ของไฟล์ในระบบ (แทน base64)
-  attachmentType AttachmentType // ประเภทการแยกไฟล์
-  createdAt DateTime @default(now())
-
-  // Relations
-  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  id             String         @id @default(cuid())
+  contactId      String
+  fileName       String
+  fileType       String
+  fileSize       Int
+  createdAt      DateTime       @default(now())
+  attachmentType AttachmentType
+  filePath       String
+  contact        Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@map("contact_attachments")
 }
 
-// Enums
 enum UserRole {
-  CUSTOMER      // ลูกค้าทั่วไป
-  ADMIN         // ผู้ดูแลระบบ
+  CUSTOMER
+  ADMIN
 }
 
 enum OrderStatus {
-  PENDING       // รอการยืนยัน
-  CONFIRMED     // ยืนยันแล้ว
-  PROCESSING    // กำลังเตรียมสินค้า
-  SHIPPED       // จัดส่งแล้ว
-  DELIVERED     // ได้รับสินค้าแล้ว
-  CANCELLED     // ยกเลิก
-  REFUNDED      // คืนเงินแล้ว
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
 }
 
 enum PaymentStatus {
-  PENDING       // รอการชำระ
-  PAID          // ชำระแล้ว
-  FAILED        // ชำระไม่สำเร็จ
-  REFUNDED      // คืนเงินแล้ว
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }
 
 enum PaymentMethod {
-  CREDIT_CARD   // บัตรเครดิต
-  PROMPTPAY     // พร้อมเพย์
-  BANK_TRANSFER // โอนเงิน
-  COD           // เก็บเงินปลายทาง
-  LINE_PAY      // LINE Pay
+  CREDIT_CARD
+  PROMPTPAY
+  BANK_TRANSFER
+  COD
+  LINE_PAY
 }
 
 enum ShippingMethod {
-  TH_POST       // พัสดุธรรมดา
-  TH_EXPRESS    // พัสดุด่วน
+  TH_POST
+  TH_EXPRESS
 }
 
-// ✅ Enum สำหรับประเภทไฟล์มีเดีย
 enum MediaType {
-  IMAGE         // รูปภาพ (JPG, PNG, GIF, WebP)
-  VIDEO         // วิดีโอ (MP4, WebM, MOV)
+  IMAGE
+  VIDEO
 }
 
-// ✅ Enum สำหรับสถานะการติดต่อ
 enum ContactStatus {
-  PENDING       // รอการตอบกลับ
-  IN_PROGRESS   // กำลังดำเนินการ
-  RESOLVED      // แก้ไขเสร็จสิ้น
-  CLOSED        // ปิดเรื่อง
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }
 
-// ✅ Enum สำหรับประเภทไฟล์แนบ
 enum AttachmentType {
-  IMAGE         // รูปภาพ (JPG, PNG, GIF)
-  PDF           // เอกสาร PDF
-  DOC           // เอกสาร Word (DOC, DOCX)
+  IMAGE
+  PDF
+  DOC
 }

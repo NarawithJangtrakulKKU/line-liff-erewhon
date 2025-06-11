@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight, ShoppingBag, Star, Heart } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ShoppingBag, Star } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
 
@@ -21,6 +21,8 @@ interface Product {
     price: string | number
     comparePrice?: string | number | null
     images?: Array<{ imageUrl: string }>
+    averageRating: number
+    reviewCount: number
 }
 
 interface HotBarItem {
@@ -31,6 +33,8 @@ interface HotBarItem {
     comparePrice?: number | null
     image: string
     badge?: string
+    averageRating: number
+    reviewCount: number
 }
 
 interface FeaturedSection {
@@ -147,7 +151,9 @@ export default function HomePage() {
                         price: Number(product.price),
                         comparePrice: product.comparePrice ? Number(product.comparePrice) : null,
                         image: product.images && product.images.length > 0 ? product.images[0].imageUrl : '/images/placeholder.png',
-                        badge: 'FEATURED'
+                        badge: 'FEATURED',
+                        averageRating: product.averageRating,
+                        reviewCount: product.reviewCount
                     }))
                     setHotBarItems(formattedProducts)
                 }
@@ -174,7 +180,9 @@ export default function HomePage() {
                         price: Number(product.price),
                         comparePrice: product.comparePrice ? Number(product.comparePrice) : null,
                         image: product.images && product.images.length > 0 ? product.images[0].imageUrl : '/images/placeholder.png',
-                        badge: 'NEW'
+                        badge: 'NEW',
+                        averageRating: product.averageRating,
+                        reviewCount: product.reviewCount
                     }))
                     setNewestProducts(formattedProducts)
                 }
@@ -200,7 +208,9 @@ export default function HomePage() {
                         description: product.description,
                         price: Number(product.price),
                         comparePrice: product.comparePrice ? Number(product.comparePrice) : null,
-                        image: product.images && product.images.length > 0 ? product.images[0].imageUrl : '/images/placeholder.png'
+                        image: product.images && product.images.length > 0 ? product.images[0].imageUrl : '/images/placeholder.png',
+                        averageRating: product.averageRating,
+                        reviewCount: product.reviewCount
                     }))
                     setAllProducts(formattedProducts)
                 }
@@ -283,16 +293,24 @@ export default function HomePage() {
                             {item.badge}
                         </span>
                     )}
-                    <button className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition-all duration-300 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0">
-                        <Heart className="w-4 h-4 text-gray-700 hover:text-red-500 transition-colors" />
-                    </button>
                 </div>
                 <div className="p-4 sm:p-5">
                     <div className="flex items-start justify-between mb-3">
                         <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base line-clamp-1 flex-1">{item.name}</h3>
                         <div className="flex items-center ml-2">
                             <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                            <span className="text-xs text-gray-600 ml-1">4.8</span>
+                            <span className="text-xs text-gray-600 ml-1">
+                                {item.averageRating > 0 ? item.averageRating.toFixed(1) : '0.0'}
+                            </span>
+                            {item.reviewCount > 0 ? (
+                                <span className="text-xs text-gray-500 ml-1">
+                                    ({item.reviewCount})
+                                </span>
+                            ) : (
+                                <span className="text-xs text-gray-500 ml-1">
+                                    (ไม่มีรีวิว)
+                                </span>
+                            )}
                         </div>
                     </div>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">{item.description}</p>

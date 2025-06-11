@@ -10,14 +10,39 @@ export async function GET() {
             include: {
                 images: { orderBy: { sortOrder: 'asc' } },
                 category: { select: { id: true, name: true, isActive: true } },
+                reviews: {
+                    select: {
+                        rating: true
+                    }
+                },
+                _count: {
+                    select: {
+                        reviews: true
+                    }
+                }
             },
             orderBy: { createdAt: 'desc' },
             take: 10,
         })
 
+        // Calculate averageRating for each product
+        const productsWithRating = products.map(product => {
+            const averageRating = product.reviews.length > 0
+                ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+                : 0;
+
+            const { reviews, _count, ...productData } = product;
+            
+            return {
+                ...productData,
+                averageRating: averageRating,
+                reviewCount: _count.reviews
+            };
+        });
+
         return NextResponse.json({
             success: true,
-            products,
+            products: productsWithRating,
         })
     } catch (error) {
         console.error('Error fetching newest products:', error)
