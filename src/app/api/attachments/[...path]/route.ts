@@ -4,11 +4,14 @@ import fs from 'fs/promises';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
+    // รอให้ params resolve
+    const resolvedParams = await params;
+    
     // รวม path segments
-    const filePath = params.path.join('/');
+    const filePath = resolvedParams.path.join('/');
     const fullPath = path.join(process.cwd(), 'public', 'attachment', filePath);
     
     console.log('📁 Serving file:', fullPath);

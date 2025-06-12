@@ -1,13 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FileText, Filter, Download, Eye, Clock, User, Phone, Mail, Paperclip, Image as ImageIcon } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, Search, ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 
 interface ContactAttachment {
   id: string;
@@ -53,11 +48,7 @@ export default function AdminReportsPage() {
     { id: 'vendor', label: 'เรียกร้องจากผู้ขาย', icon: '🏪' }
   ];
 
-  useEffect(() => {
-    fetchSubmissions();
-  }, [selectedFilter]);
-
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/contact?issueType=${selectedFilter}`);
@@ -72,7 +63,11 @@ export default function AdminReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedFilter]);
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, [fetchSubmissions]);
 
   const handleFilterChange = (filterValue: string) => {
     setSelectedFilter(filterValue);
@@ -136,10 +131,13 @@ export default function AdminReportsPage() {
           >
             ×
           </button>
-          <img
+          <Image
             src={currentImage.filePath}
             alt={currentImage.fileName}
+            width={800}
+            height={600}
             className="max-w-full max-h-full object-contain"
+            style={{ width: 'auto', height: 'auto' }}
           />
           <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white p-2 rounded">
             <p className="text-sm">{currentImage.fileName}</p>
@@ -400,7 +398,7 @@ export default function AdminReportsPage() {
                 <p className="text-sm font-semibold text-gray-900">
                   {submissions.length > 0 ? getIssueTypeLabel(
                     Object.entries(
-                      submissions.reduce((acc: any, curr) => {
+                      submissions.reduce((acc: Record<string, number>, curr) => {
                         acc[curr.issueType] = (acc[curr.issueType] || 0) + 1;
                         return acc;
                       }, {})
