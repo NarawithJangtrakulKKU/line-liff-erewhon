@@ -40,7 +40,12 @@ export async function POST(request: NextRequest) {
 
     // บันทึกไฟล์แนบ (ถ้ามี)
     if (attachments.length > 0) {
-      const attachmentPromises = attachments.map(async (attachment: any) => {
+      const attachmentPromises = attachments.map(async (attachment: {
+        fileName: string;
+        fileType: string;
+        fileSize: number;
+        base64Data: string;
+      }) => {
         try {
           // บันทึกไฟล์จริงในระบบ
           const { filePath, attachmentType } = await saveAttachmentFile(

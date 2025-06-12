@@ -2,12 +2,9 @@
 
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { AlertCircle, CheckCircle, X, Paperclip } from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 interface AttachedFile {
     name: string;
@@ -25,7 +22,6 @@ export default function ContactUsPage() {
         message: ''
     });
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Modal states

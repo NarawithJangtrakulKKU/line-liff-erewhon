@@ -30,7 +30,7 @@ export async function GET() {
         ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
         : 0;
 
-      const { reviews, _count, ...productData } = product;
+      const { _count, ...productData } = product;
       
       return {
         ...productData,
